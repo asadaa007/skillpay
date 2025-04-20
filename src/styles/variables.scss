@@ -1,0 +1,21 @@
+// Colors
+$colors: (
+  'primary': #0A66C2,
+  'primary-dark': #004182,
+  'secondary': #00A82D,
+  'gray': #1E1E1E,
+  'light-1': #FFFFFF,
+  'light-2': #F5F5F5,
+  'dark-1': #000000,
+  'dark-2': #333333,
+);
+
+// Function to get color
+@function paint($color-name) {
+  @return map-get($colors, $color-name);
+}
+
+// Function to convert px to rem
+@function rem($pixels) {
+  @return calc($pixels / 16) + rem;
+} 
