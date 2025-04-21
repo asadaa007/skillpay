@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
@@ -15,60 +15,70 @@ const ChatWindow = ({ recipientId, recipientName }) => {
   useEffect(() => {
     if (!user || !recipientId) return;
 
-    const chatId = [user.uid, recipientId].sort().join('_');
-    const messagesRef = collection(db, 'chats', chatId, 'messages');
-    
-    const fetchMessages = async () => {
+    const initializeChat = async () => {
       try {
+        const chatId = [user.uid, recipientId].sort().join('_');
+        const chatRef = doc(db, 'chats', chatId);
+        const chatDoc = await getDoc(chatRef);
+        
+        if (!chatDoc.exists()) {
+          const chatData = {
+            participants: [user.uid, recipientId],
+            createdAt: serverTimestamp(),
+            lastMessage: null,
+            lastMessageTime: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            unreadCount: {
+              [user.uid]: 0,
+              [recipientId]: 0
+            }
+          };
+          
+          await setDoc(chatRef, chatData);
+          
+          const messagesRef = collection(db, 'chats', chatId, 'messages');
+          await addDoc(messagesRef, {
+            text: 'Chat started',
+            senderId: 'system',
+            timestamp: serverTimestamp(),
+            type: 'system'
+          });
+        } else {
+          // Reset unread count for current user when opening chat
+          await updateDoc(chatRef, {
+            [`unreadCount.${user.uid}`]: 0
+          });
+        }
+
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
         const messagesQuery = query(
           messagesRef,
-          where('participants', 'array-contains', user.uid)
+          orderBy('timestamp', 'asc')
         );
-        
-        const snapshot = await getDocs(messagesQuery);
-        const messageList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        // Sort messages by timestamp in memory
-        messageList.sort((a, b) => {
-          const timeA = a.timestamp?.toDate() || new Date(0);
-          const timeB = b.timestamp?.toDate() || new Date(0);
-          return timeA - timeB;
+
+        const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+          const newMessages = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setMessages(newMessages);
+          scrollToBottom();
+          setLoading(false);
+        }, (error) => {
+          console.error('Error in messages listener:', error);
+          toast.error('Failed to load messages');
+          setLoading(false);
         });
-        
-        setMessages(messageList);
-        setLoading(false);
-        scrollToBottom();
+
+        return () => unsubscribe();
       } catch (error) {
-        console.error('Error fetching messages:', error);
-        toast.error('Failed to load messages');
+        console.error('Error initializing chat:', error);
+        toast.error('Failed to initialize chat');
         setLoading(false);
       }
     };
 
-    fetchMessages();
-
-    // Set up real-time listener for new messages
-    const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
-      const newMessages = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      // Sort messages by timestamp in memory
-      newMessages.sort((a, b) => {
-        const timeA = a.timestamp?.toDate() || new Date(0);
-        const timeB = b.timestamp?.toDate() || new Date(0);
-        return timeA - timeB;
-      });
-      
-      setMessages(newMessages);
-      scrollToBottom();
-    });
-
-    return () => unsubscribe();
+    initializeChat();
   }, [user, recipientId]);
 
   const scrollToBottom = () => {
@@ -81,14 +91,43 @@ const ChatWindow = ({ recipientId, recipientName }) => {
 
     const chatId = [user.uid, recipientId].sort().join('_');
     const messagesRef = collection(db, 'chats', chatId, 'messages');
+    const chatRef = doc(db, 'chats', chatId);
 
     try {
-      await addDoc(messagesRef, {
+      const messageData = {
         text: newMessage.trim(),
         senderId: user.uid,
         recipientId: recipientId,
         timestamp: serverTimestamp(),
-        participants: [user.uid, recipientId]
+        type: 'text',
+        read: false
+      };
+
+      await addDoc(messagesRef, messageData);
+
+      // Update chat document with last message and increment unread count
+      const chatDoc = await getDoc(chatRef);
+      const currentUnreadCount = chatDoc.data()?.unreadCount?.[recipientId] || 0;
+
+      await updateDoc(chatRef, {
+        lastMessage: newMessage.trim(),
+        lastMessageTime: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        [`unreadCount.${recipientId}`]: currentUnreadCount + 1
+      });
+
+      // Create notification for recipient
+      const notificationsRef = collection(db, 'notifications');
+      await addDoc(notificationsRef, {
+        userId: recipientId,
+        type: 'message',
+        chatId: chatId,
+        senderId: user.uid,
+        senderName: user.displayName || 'User',
+        senderEmail: user.email,
+        message: `New message: ${newMessage.trim()}`,
+        timestamp: serverTimestamp(),
+        read: false
       });
 
       setNewMessage('');
@@ -126,13 +165,17 @@ const ChatWindow = ({ recipientId, recipientName }) => {
               className={`max-w-[70%] rounded-lg px-4 py-2 ${
                 message.senderId === user.uid
                   ? 'bg-primary text-white'
+                  : message.senderId === 'system'
+                  ? 'bg-gray-200 text-gray-600 text-center w-full'
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
               <p className="text-sm">{message.text}</p>
-              <span className="text-xs opacity-75 mt-1 block">
-                {message.timestamp?.toDate().toLocaleTimeString()}
-              </span>
+              {message.type !== 'system' && (
+                <span className="text-xs opacity-75 mt-1 block">
+                  {message.timestamp?.toDate().toLocaleTimeString()}
+                </span>
+              )}
             </div>
           </div>
         ))}

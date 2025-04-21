@@ -267,7 +267,7 @@ const Gigs = () => {
   }
 
   return (
-    <div className="container-custom py-12">
+    <div className="container-custom py-20">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           {user ? 'My Gigs' : 'All Gigs'}

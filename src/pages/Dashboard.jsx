@@ -162,7 +162,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="w-full py-16">
+    <div className="w-full py-20">
       <div className="container-custom">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>

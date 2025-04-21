@@ -8,6 +8,7 @@ import {
   UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ const Messages = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [loading, setLoading] = useState(true);
   const [recipientDetails, setRecipientDetails] = useState(null);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (!user) {
@@ -53,7 +55,7 @@ const Messages = () => {
                 participants: conversation.participants,
                 otherUser: {
                   id: otherUserId,
-                  name: userData?.displayName || 'Unknown User',
+                  name: userData?.displayName || userData?.fullName || 'Unknown User',
                   avatar: userData?.photoURL || null
                 }
               };
@@ -83,6 +85,19 @@ const Messages = () => {
         });
 
         setConversations(validConversations);
+
+        // Check if there's a conversation ID in the URL
+        const conversationId = searchParams.get('conversation');
+        if (conversationId) {
+          const conversation = validConversations.find(conv => conv.id === conversationId);
+          if (conversation) {
+            setSelectedChat(conversation);
+            setRecipientDetails({
+              id: conversation.otherUser.id,
+              name: conversation.otherUser.name,
+            });
+          }
+        }
       } catch (error) {
         console.error('Error fetching conversations:', error);
         toast.error('Failed to load conversations');
@@ -92,16 +107,7 @@ const Messages = () => {
     };
 
     fetchConversations();
-  }, [user]);
-
-  useEffect(() => {
-    if (selectedChat) {
-      setRecipientDetails({
-        id: selectedChat.otherUser.id,
-        name: selectedChat.otherUser.name,
-      });
-    }
-  }, [selectedChat]);
+  }, [user, searchParams]);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
@@ -142,7 +148,7 @@ const Messages = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="grid grid-cols-12 h-[calc(100vh-12rem)]">
             {/* Conversations List */}
@@ -159,7 +165,13 @@ const Messages = () => {
                   conversations.map((conversation) => (
                     <button
                       key={conversation.id}
-                      onClick={() => setSelectedChat(conversation)}
+                      onClick={() => {
+                        setSelectedChat(conversation);
+                        setRecipientDetails({
+                          id: conversation.otherUser.id,
+                          name: conversation.otherUser.name,
+                        });
+                      }}
                       className={`w-full p-4 flex items-start space-x-4 hover:bg-gray-50 ${
                         selectedChat?.id === conversation.id ? 'bg-gray-50' : ''
                       }`}

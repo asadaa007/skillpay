@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
+import { Link, useNavigate } from 'react-router-dom';
+import { collection, getDocs, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { 
@@ -8,11 +8,13 @@ import {
   ChatBubbleLeftIcon,
   UserCircleIcon
 } from '@heroicons/react/24/outline';
+import { toast } from 'react-hot-toast';
 
 const Skills = () => {
   const [freelancers, setFreelancers] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Dummy freelancer data
   const dummyFreelancers = [
@@ -83,8 +85,48 @@ const Skills = () => {
       window.location.href = '/login';
       return;
     }
-    // Navigate to chat with the freelancer
-    window.location.href = `/messages?user=${freelancerId}`;
+    
+    // Create a new conversation in Firestore
+    const createConversation = async () => {
+      try {
+        // Check if conversation already exists
+        const conversationsRef = collection(db, 'conversations');
+        const q = query(
+          conversationsRef,
+          where('participants', 'array-contains', user.uid)
+        );
+        const snapshot = await getDocs(q);
+        
+        let existingConversation = null;
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.participants.includes(freelancerId)) {
+            existingConversation = { id: doc.id, ...data };
+          }
+        });
+
+        if (existingConversation) {
+          // If conversation exists, navigate to it
+          navigate(`/messages?conversation=${existingConversation.id}`);
+        } else {
+          // Create new conversation
+          const newConversationRef = await addDoc(collection(db, 'conversations'), {
+            participants: [user.uid, freelancerId],
+            createdAt: serverTimestamp(),
+            lastMessage: null,
+            lastMessageTime: serverTimestamp()
+          });
+          
+          // Navigate to the new conversation
+          navigate(`/messages?conversation=${newConversationRef.id}`);
+        }
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        toast.error('Failed to start chat');
+      }
+    };
+
+    createConversation();
   };
 
   if (loading) {
