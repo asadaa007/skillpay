@@ -109,16 +109,18 @@ const Navbar = () => {
                   <div className="flex items-center">
                     <Link
                       to="/profile"
-                      className={`flex items-center text-sm font-medium transition-colors duration-300 ${
-                        isScrolled 
-                          ? 'text-gray-600 hover:text-gray-900' 
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
+                      className="flex items-center space-x-3 text-sm font-medium transition-colors duration-300"
                     >
-                      <UserCircleIcon className={`h-8 w-8 transition-colors duration-300 ${
-                        isScrolled ? 'text-gray-600' : 'text-gray-600'
-                      }`} />
-                      <span className="ml-2">{user.displayName || user.email}</span>
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt="Profile"
+                          className="h-8 w-8 rounded-full object-cover border-2 border-white shadow-sm"
+                        />
+                      ) : (
+                        <UserCircleIcon className="h-8 w-8 text-gray-600" />
+                      )}
+                      <span className="hidden md:block text-gray-700">{user.fullName || user.email}</span>
                     </Link>
                     <button
                       onClick={handleLogout}
@@ -133,11 +135,7 @@ const Navbar = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/login"
-                  className={`transition-colors duration-300 ${
-                    isScrolled 
-                      ? 'text-gray-600 hover:text-gray-900' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  className="transition-colors duration-300 text-gray-600 hover:text-gray-900"
                 >
                   Login
                 </Link>
@@ -202,23 +200,26 @@ const Navbar = () => {
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="flex items-center px-4">
               <div className="flex-shrink-0">
-                <UserCircleIcon className="h-10 w-10 text-gray-600" />
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt="Profile"
+                    className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm"
+                  />
+                ) : (
+                  <UserCircleIcon className="h-10 w-10 text-gray-600" />
+                )}
               </div>
               <div className="ml-3">
                 <div className="text-base font-medium text-gray-900">
-                  {user.displayName || user.email}
+                  {user.fullName || user.email}
                 </div>
               </div>
             </div>
             <div className="mt-3 space-y-1">
               <Link
                 to="/profile"
-                className={`block px-4 py-2 text-base font-medium transition-colors duration-300 ${
-                  location.pathname === '/profile'
-                    ? 'text-primary bg-gray-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                onClick={handleLogout}
+                className="block px-4 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-300"
               >
                 Profile
               </Link>
@@ -235,23 +236,13 @@ const Navbar = () => {
             <div className="space-y-1">
               <Link
                 to="/login"
-                className={`block px-4 py-2 text-base font-medium transition-colors duration-300 ${
-                  location.pathname === '/login'
-                    ? 'text-primary bg-gray-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                onClick={handleLogout}
+                className="block px-4 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-300"
               >
                 Login
               </Link>
               <Link
                 to="/register"
-                className={`block px-4 py-2 text-base font-medium transition-colors duration-300 ${
-                  location.pathname === '/register'
-                    ? 'text-primary bg-gray-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                onClick={handleLogout}
+                className="block px-4 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-300"
               >
                 Register
               </Link>

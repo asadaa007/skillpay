@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'react-hot-toast';
 import { FiEdit2, FiUpload, FiUser, FiBriefcase, FiSettings, FiAward, FiDollarSign, FiGlobe } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import { uploadImageToImgBB } from '../utils/imageUpload';
+import ImageUpload from '../components/ImageUpload';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -101,24 +103,21 @@ const Profile = () => {
     }));
   };
 
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const handleAvatarUpload = async (imageUrl) => {
     try {
-      const storageRef = ref(storage, `avatars/${user.uid}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        avatar: imageUrl,
+        updatedAt: new Date()
+      });
       setProfileData(prev => ({
         ...prev,
-        avatar: url
+        avatar: imageUrl
       }));
-      
-      toast.success('Avatar uploaded successfully');
+      toast.success('Profile picture updated successfully');
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error('Failed to upload avatar');
+      console.error('Error updating avatar:', error);
+      toast.error('Failed to update profile picture');
     }
   };
 
@@ -152,45 +151,53 @@ const Profile = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow">
           {/* Profile Header */}
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <img
-                  src={profileData.avatar || 'https://via.placeholder.com/150'}
-                  alt="Profile"
-                  className="h-24 w-24 rounded-full object-cover"
-                />
-                <label
-                  htmlFor="avatar-upload"
-                  className="absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full cursor-pointer hover:bg-blue-700"
-                >
-                  <FiUpload className="h-4 w-4" />
-                </label>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
+          <div className="px-4 py-5 sm:px-6 border-b border-gray-200 bg-white">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+              <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                <div className="relative">
+                  <ImageUpload
+                    currentImageUrl={profileData.avatar}
+                    onImageUploaded={handleAvatarUpload}
+                    placeholder="Upload Profile Picture"
+                    className="w-32 h-32 rounded-full border-4 border-white shadow-lg"
+                    imageClassName="w-32 h-32 rounded-full object-cover"
+                    showRemoveButton={true}
+                    onRemove={() => handleAvatarUpload('')}
+                  />
+                </div>
+                <div className="text-center md:text-left">
+                  <h2 className="text-2xl font-bold text-gray-900">{profileData.fullName || 'Add Your Name'}</h2>
+                  <p className="text-lg text-gray-600 mt-1">{profileData.userType === 'freelancer' ? 'Freelancer' : 'Client'}</p>
+                  {profileData.location && (
+                    <p className="text-sm text-gray-500 mt-1 flex items-center justify-center md:justify-start">
+                      <FiGlobe className="mr-1" />
+                      {profileData.location}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">{profileData.fullName}</h3>
-                <p className="text-sm text-gray-500">{profileData.userType === 'freelancer' ? 'Freelancer' : 'Client'}</p>
+              <div className="mt-4 md:mt-0 w-full md:w-auto flex justify-center md:justify-end">
+                <Link
+                  to={`/profile/${user.uid}`}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                >
+                  <FiUser className="mr-2" />
+                  View Public Profile
+                </Link>
               </div>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
+          {/* Tabs with updated styling */}
+          <div className="border-b border-gray-200 bg-white">
+            <nav className="flex">
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`${
                   activeTab === 'profile'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm flex items-center`}
+                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                } flex-1 md:flex-none whitespace-nowrap py-4 px-8 border-b-2 font-medium text-sm flex items-center justify-center transition-colors duration-200`}
               >
                 <FiUser className="mr-2" />
                 Profile
@@ -199,9 +206,9 @@ const Profile = () => {
                 onClick={() => setActiveTab('professional')}
                 className={`${
                   activeTab === 'professional'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm flex items-center`}
+                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                } flex-1 md:flex-none whitespace-nowrap py-4 px-8 border-b-2 font-medium text-sm flex items-center justify-center transition-colors duration-200`}
               >
                 <FiBriefcase className="mr-2" />
                 Professional Info
@@ -210,9 +217,9 @@ const Profile = () => {
                 onClick={() => setActiveTab('portfolio')}
                 className={`${
                   activeTab === 'portfolio'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm flex items-center`}
+                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                } flex-1 md:flex-none whitespace-nowrap py-4 px-8 border-b-2 font-medium text-sm flex items-center justify-center transition-colors duration-200`}
               >
                 <FiAward className="mr-2" />
                 Portfolio

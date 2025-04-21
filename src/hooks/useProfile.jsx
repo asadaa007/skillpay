@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { db } from '../config/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import { uploadImageToImgBB } from '../utils/imageUpload';
 
 export const useProfile = () => {
   const [loading, setLoading] = useState(true);
@@ -30,41 +31,6 @@ export const useProfile = () => {
     }
   };
 
-  const uploadAvatarToImgBB = async (avatar) => {
-    try {
-      console.log(`Uploading avatar to ImgBB: ${avatar.name}`);
-      
-      // Create form data for ImgBB API
-      const formData = new FormData();
-      formData.append('image', avatar);
-      
-      // Get ImgBB API key from environment variables
-      const imgbbApiKey = import.meta.env.VITE_IMGBB_API_KEY;
-      
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error(`ImgBB API error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('ImgBB upload successful:', data);
-      
-      if (data.success && data.data && data.data.url) {
-        return data.data.url;
-      } else {
-        throw new Error('ImgBB response missing URL');
-      }
-    } catch (uploadError) {
-      console.error(`Error uploading avatar to ImgBB:`, uploadError);
-      toast.error(`Failed to upload avatar. Continuing with existing avatar.`);
-      return null;
-    }
-  };
-
   const updateProfile = async (userId, profileData, avatar = null) => {
     try {
       setLoading(true);
@@ -73,9 +39,14 @@ export const useProfile = () => {
       
       // Upload new avatar if provided
       if (avatar) {
-        const newAvatarUrl = await uploadAvatarToImgBB(avatar);
-        if (newAvatarUrl) {
-          avatarUrl = newAvatarUrl;
+        try {
+          const newAvatarUrl = await uploadImageToImgBB(avatar);
+          if (newAvatarUrl) {
+            avatarUrl = newAvatarUrl;
+          }
+        } catch (uploadError) {
+          console.error('Error uploading avatar to ImgBB:', uploadError);
+          toast.error('Failed to upload avatar. Continuing with existing avatar.');
         }
       }
       

@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import PublicProfile from './pages/PublicProfile';
 import Gigs from './pages/Gigs';
 import GigDetails from './pages/GigDetails';
 import EditGig from './pages/EditGig';
@@ -18,6 +19,7 @@ import Portfolio from './pages/Portfolio';
 import Messages from './pages/Messages';
 import Jobs from './pages/Jobs';
 import JobDetails from './pages/JobDetails';
+import EditJob from './pages/EditJob';
 import './App.css';
 
 // Protected Route component
@@ -53,6 +55,7 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:jobId" element={<JobDetails />} />
+              <Route path="/jobs/:jobId/edit" element={<EditJob />} />
               <Route 
                 path="/dashboard" 
                 element={
@@ -68,6 +71,10 @@ const App = () => {
                     <Profile />
                   </ProtectedRoute>
                 } 
+              />
+              <Route 
+                path="/profile/:userId" 
+                element={<PublicProfile />} 
               />
               <Route 
                 path="/portfolio" 

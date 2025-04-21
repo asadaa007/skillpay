@@ -28,7 +28,14 @@ export const AuthProvider = ({ children }) => {
           // Get additional user data from Firestore
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
-            setUser({ ...user, ...userDoc.data() });
+            const userData = userDoc.data();
+            setUser({
+              ...user,
+              fullName: userData.fullName || user.displayName || '',
+              avatar: userData.avatar || user.photoURL || '',
+              userType: userData.userType || 'freelancer',
+              ...userData
+            });
           } else {
             // If user document doesn't exist, create it with default values
             const defaultUserData = {
