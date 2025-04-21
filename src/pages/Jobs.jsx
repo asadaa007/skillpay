@@ -842,7 +842,7 @@ const Jobs = () => {
 
   return (
     <div className="w-full py-16">
-      <div className="container-custom">
+      <div className="container-custom pt-16">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Available Jobs</h1>
           <div className="flex space-x-4">

@@ -9,11 +9,15 @@ const CategoriesNav = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const isScrolled = window.scrollY > 100;
+      const isScrolled = window.scrollY > 50; // Reduced threshold to 50px
+      console.log('Scroll position:', window.scrollY, 'Show nav:', isScrolled);
       if (isScrolled !== showNav) {
         setShowNav(isScrolled);
       }
     };
+
+    // Initial check
+    handleScroll();
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -33,60 +37,59 @@ const CategoriesNav = () => {
     setScrollPosition(newPosition);
   };
 
-  // Categories data
+  // Categories data with correct routes
   const categories = [
-    { name: 'Graphics & Design', href: '/category/graphics-design' },
-    { name: 'Programming & Tech', href: '/category/programming-tech' },
-    { name: 'Digital Marketing', href: '/category/digital-marketing' },
-    { name: 'Video & Animation', href: '/category/video-animation' },
-    { name: 'Writing & Translation', href: '/category/writing-translation' },
-    { name: 'Music & Audio', href: '/category/music-audio' },
-    { name: 'Business', href: '/category/business' },
-    { name: 'Data', href: '/category/data' },
-    { name: 'Photography', href: '/category/photography' },
-    { name: 'AI Services', href: '/category/ai-services' },
+    { name: 'Web Development', href: '/web-development' },
+    { name: 'Mobile Development', href: '/mobile-development' },
+    { name: 'UI/UX Design', href: '/ui-design' },
+    { name: 'Writing', href: '/writing' },
+    { name: 'Marketing', href: '/marketing' },
+    { name: 'Other Services', href: '/other-services' }
   ];
 
   if (!showNav) return null;
 
   return (
-    <div className="fixed top-16 left-0 right-0 bg-white shadow-md z-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <button
-          onClick={() => handleScroll('left')}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors"
-        >
-          <ChevronLeftIcon className="h-5 w-5" />
-        </button>
-        
-        <div 
-          id="categories-container"
-          className="overflow-x-hidden py-3 px-12"
-        >
-          <ul className="flex space-x-6 transition-transform duration-300">
-            {categories.map((category) => (
-              <li key={category.name} className="whitespace-nowrap">
-                <Link 
-                  to={category.href}
-                  className={`text-sm font-medium px-3 py-1 rounded-md transition-colors duration-200 ${
-                    location.pathname === category.href
-                      ? 'bg-primary text-white'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  {category.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div className="fixed top-16 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative">
+          {/* Left scroll button */}
+          <button
+            onClick={() => handleScroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white p-1 rounded-full shadow-md hover:bg-gray-50"
+          >
+            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+          </button>
 
-        <button
-          onClick={() => handleScroll('right')}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors"
-        >
-          <ChevronRightIcon className="h-5 w-5" />
-        </button>
+          {/* Categories container */}
+          <div
+            id="categories-container"
+            className="flex overflow-x-auto py-4 px-8 scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {categories.map((category) => (
+              <Link
+                key={category.name}
+                to={category.href}
+                className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-md mr-2 ${
+                  location.pathname === category.href
+                    ? 'bg-primary text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {category.name}
+              </Link>
+            ))}
+          </div>
+
+          {/* Right scroll button */}
+          <button
+            onClick={() => handleScroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white p-1 rounded-full shadow-md hover:bg-gray-50"
+          >
+            <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -20,6 +20,13 @@ import Messages from './pages/Messages';
 import Jobs from './pages/Jobs';
 import JobDetails from './pages/JobDetails';
 import EditJob from './pages/EditJob';
+import WebDevelopment from './pages/WebDevelopment';
+import MobileDevelopment from './pages/MobileDevelopment';
+import UIDesign from './pages/UIDesign';
+import Writing from './pages/Writing';
+import Marketing from './pages/Marketing';
+import OtherServices from './pages/OtherServices';
+import Skills from './pages/Skills';
 import './App.css';
 
 // Protected Route component
@@ -56,6 +63,13 @@ const App = () => {
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:jobId" element={<JobDetails />} />
               <Route path="/jobs/:jobId/edit" element={<EditJob />} />
+              <Route path="/web-development" element={<WebDevelopment />} />
+              <Route path="/mobile-development" element={<MobileDevelopment />} />
+              <Route path="/ui-design" element={<UIDesign />} />
+              <Route path="/writing" element={<Writing />} />
+              <Route path="/marketing" element={<Marketing />} />
+              <Route path="/other-services" element={<OtherServices />} />
+              <Route path="/skills" element={<Skills />} />
               <Route 
                 path="/dashboard" 
                 element={
@@ -102,11 +116,7 @@ const App = () => {
               />
               <Route 
                 path="/gigs/:gigId" 
-                element={
-                  <ProtectedRoute>
-                    <GigDetails />
-                  </ProtectedRoute>
-                } 
+                element={<GigDetails />} 
               />
               <Route 
                 path="/gigs/:gigId/edit" 

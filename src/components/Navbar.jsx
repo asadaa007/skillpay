@@ -11,7 +11,9 @@ import {
   ChartBarIcon,
   FolderIcon,
   ChatBubbleLeftIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  ChevronDownIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import Notifications from './Notifications';
@@ -26,14 +28,15 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       const scrolled = window.scrollY > 0;
-      if (scrolled !== isScrolled) {
-        setIsScrolled(scrolled);
-      }
+      setIsScrolled(scrolled);
     };
+
+    // Initial check
+    handleScroll();
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isScrolled]);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -48,6 +51,7 @@ const Navbar = () => {
   const generalNavigation = [
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Jobs', href: '/jobs', icon: ClipboardDocumentListIcon },
+    { name: 'Skills', href: '/skills', icon: BriefcaseIcon },
   ];
 
   // User-specific navigation items (shown only when logged in)
@@ -60,23 +64,26 @@ const Navbar = () => {
   ];
 
   // Determine which navigation items to show based on user authentication
-  const navigation = user ? [...generalNavigation, ...userNavigation] : generalNavigation;
+  const navigation = generalNavigation;
 
   return (
     <nav className={`fixed top-0 left-0 right-0 transition-all duration-300 z-20 ${
-      isScrolled ? 'bg-white border-b border-gray-200' : 'bg-transparent'
+      isScrolled ? 'bg-white border-b border-gray-200 shadow-sm' : 'bg-transparent'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex">
-            <div className="flex flex-shrink-0 items-center">
-              <Link to="/" className={`text-2xl font-bold transition-colors duration-300 ${
-                isScrolled ? 'text-gray-800' : 'text-gray-800'
-              }`}>
-                SkillPay
-              </Link>
-            </div>
-            <div className="hidden lg:ml-6 lg:flex lg:space-x-8">
+          {/* Logo - Left side */}
+          <div className="flex-shrink-0">
+            <Link to="/" className={`text-2xl font-bold transition-colors duration-300 ${
+              isScrolled ? 'text-gray-800' : 'text-gray-800'
+            }`}>
+              SkillPay
+            </Link>
+          </div>
+
+          {/* Navigation - Center */}
+          <div className="hidden lg:flex lg:flex-1 lg:justify-center">
+            <div className="flex space-x-8">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
@@ -99,36 +106,69 @@ const Navbar = () => {
               ))}
             </div>
           </div>
-          <div className="hidden lg:ml-6 lg:flex lg:items-center">
+
+          {/* Auth buttons - Right side */}
+          <div className="hidden lg:flex lg:items-center lg:space-x-4">
             {user ? (
               <>
                 <div className="mr-4">
                   <Notifications />
                 </div>
-                <Menu as="div" className="relative ml-3">
-                  <div className="flex items-center">
-                    <Link
-                      to="/profile"
-                      className="flex items-center space-x-3 text-sm font-medium transition-colors duration-300"
-                    >
-                      {user.avatar ? (
-                        <img
-                          src={user.avatar}
-                          alt="Profile"
-                          className="h-8 w-8 rounded-full object-cover border-2 border-white shadow-sm"
-                        />
-                      ) : (
-                        <UserCircleIcon className="h-8 w-8 text-gray-600" />
-                      )}
-                      <span className="hidden md:block text-gray-700">{user.fullName || user.email}</span>
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="ml-4 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-300"
-                    >
-                      Logout
-                    </button>
-                  </div>
+                <Menu as="div" className="relative">
+                  <Menu.Button className="flex items-center space-x-3 text-sm font-medium transition-colors duration-300 focus:outline-none">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt="Profile"
+                        className="h-8 w-8 rounded-full object-cover border-2 border-white shadow-sm"
+                      />
+                    ) : (
+                      <UserCircleIcon className="h-8 w-8 text-gray-600" />
+                    )}
+                    <span className="hidden md:block text-gray-700">{user.fullName || user.email}</span>
+                    <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                  </Menu.Button>
+
+                  <Transition
+                    as={Fragment}
+                    enter="transition ease-out duration-100"
+                    enterFrom="transform opacity-0 scale-95"
+                    enterTo="transform opacity-100 scale-100"
+                    leave="transition ease-in duration-75"
+                    leaveFrom="transform opacity-100 scale-100"
+                    leaveTo="transform opacity-0 scale-95"
+                  >
+                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                      {userNavigation.map((item) => (
+                        <Menu.Item key={item.name}>
+                          {({ active }) => (
+                            <Link
+                              to={item.href}
+                              className={`${
+                                active ? 'bg-gray-100' : ''
+                              } flex items-center px-4 py-2 text-sm text-gray-700`}
+                            >
+                              <item.icon className="h-5 w-5 mr-2 text-gray-500" />
+                              {item.name}
+                            </Link>
+                          )}
+                        </Menu.Item>
+                      ))}
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={handleLogout}
+                            className={`${
+                              active ? 'bg-gray-100' : ''
+                            } flex w-full items-center px-4 py-2 text-sm text-gray-700`}
+                          >
+                            <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2 text-gray-500" />
+                            Logout
+                          </button>
+                        )}
+                      </Menu.Item>
+                    </Menu.Items>
+                  </Transition>
                 </Menu>
               </>
             ) : (
@@ -148,6 +188,8 @@ const Navbar = () => {
               </div>
             )}
           </div>
+
+          {/* Mobile menu button */}
           <div className="-mr-2 flex items-center lg:hidden">
             {user && (
               <div className="mr-2">
@@ -186,7 +228,24 @@ const Navbar = () => {
                   ? 'text-primary bg-gray-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
-              onClick={handleLogout}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <item.icon className={`h-5 w-5 mr-2 transition-colors duration-300 ${
+                location.pathname === item.href ? 'text-primary' : 'text-gray-600'
+              }`} />
+              {item.name}
+            </Link>
+          ))}
+          {user && userNavigation.map((item) => (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={`flex items-center px-3 py-2 text-base font-medium transition-colors duration-300 ${
+                location.pathname === item.href
+                  ? 'text-primary bg-gray-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
             >
               <item.icon className={`h-5 w-5 mr-2 transition-colors duration-300 ${
                 location.pathname === item.href ? 'text-primary' : 'text-gray-600'
