@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { signup } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -34,10 +34,10 @@ const Register = () => {
     setLoading(true);
     
     try {
-      await register(formData.email, formData.password, formData.fullName);
+      await signup(formData.email, formData.password, { fullName: formData.fullName });
       navigate('/dashboard');
     } catch (error) {
-      // Error is handled by the register function
+      // Error is handled by the signup function
     } finally {
       setLoading(false);
     }
