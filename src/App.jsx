@@ -27,6 +27,7 @@ import Writing from './pages/Writing';
 import Marketing from './pages/Marketing';
 import OtherServices from './pages/OtherServices';
 import Skills from './pages/Skills';
+import ForgotPassword from './pages/ForgotPassword';
 import './App.css';
 
 // Protected Route component
@@ -60,6 +61,7 @@ const App = () => {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:jobId" element={<JobDetails />} />
               <Route path="/jobs/:jobId/edit" element={<EditJob />} />

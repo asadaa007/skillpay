@@ -6,7 +6,8 @@ import {
   signOut, 
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
@@ -209,13 +210,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast.success('Password reset email sent! Please check your inbox.');
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      toast.error(error.message);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
     signup,
     login,
     loginWithGoogle,
-    logout
+    logout,
+    resetPassword
   };
 
   return (
