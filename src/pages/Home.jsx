@@ -421,10 +421,10 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
             <div>
-              <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+              <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl text-left">
                 Why choose SkillPay?
               </h2>
-              <p className="mt-4 text-lg text-gray-600">
+              <p className="mt-4 text-lg text-gray-600  text-left">
                 We're committed to providing the best experience for both freelancers and clients. Our platform is designed to help you succeed.
               </p>
               <div className="mt-8">

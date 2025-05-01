@@ -1,114 +1,86 @@
-import { useState } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { FiStar } from 'react-icons/fi';
 import { db } from '../../config/firebase';
-import { useAuth } from '../../hooks/useAuth';
-import { StarIcon } from '@heroicons/react/24/solid';
-import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
+import { addDoc, collection } from 'firebase/firestore';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 
-const ReviewForm = ({ gigId, onReviewSubmitted }) => {
+const ReviewForm = ({ freelancerId, projectId, projectTitle, onSuccess }) => {
   const { user } = useAuth();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
-  const [hoveredRating, setHoveredRating] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) return;
-    if (rating === 0) {
+    if (!rating) {
       toast.error('Please select a rating');
       return;
     }
-    if (!comment.trim()) {
-      toast.error('Please write a review');
-      return;
-    }
 
-    setSubmitting(true);
+    setLoading(true);
     try {
-      const reviewData = {
-        gigId,
-        userId: user.uid,
-        userName: user.displayName,
-        userPhoto: user.photoURL,
+      await addDoc(collection(db, 'reviews'), {
+        freelancerId,
+        projectId,
+        projectTitle,
         rating,
-        comment: comment.trim(),
-        timestamp: serverTimestamp(),
-      };
-
-      await addDoc(collection(db, 'reviews'), reviewData);
-      
-      // Update gig rating
-      const gigRef = doc(db, 'gigs', gigId);
-      const gigDoc = await getDoc(gigRef);
-      const currentRating = gigDoc.data().rating || 0;
-      const totalReviews = gigDoc.data().totalReviews || 0;
-      
-      await updateDoc(gigRef, {
-        rating: ((currentRating * totalReviews) + rating) / (totalReviews + 1),
-        totalReviews: totalReviews + 1,
+        comment,
+        reviewerId: user.uid,
+        reviewerName: user.displayName,
+        reviewerAvatar: user.photoURL,
+        createdAt: new Date().toISOString(),
+        status: 'published'
       });
 
+      toast.success('Review submitted successfully');
       setRating(0);
       setComment('');
-      toast.success('Review submitted successfully');
-      if (onReviewSubmitted) {
-        onReviewSubmitted();
-      }
+      onSuccess?.();
     } catch (error) {
       console.error('Error submitting review:', error);
       toast.error('Failed to submit review');
+    } finally {
+      setLoading(false);
     }
-    setSubmitting(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Rating
-        </label>
-        <div className="flex space-x-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              onMouseEnter={() => setHoveredRating(star)}
-              onMouseLeave={() => setHoveredRating(0)}
-              onClick={() => setRating(star)}
-              className="focus:outline-none"
-            >
-              {star <= (hoveredRating || rating) ? (
-                <StarIcon className="h-8 w-8 text-yellow-400" />
-              ) : (
-                <StarOutlineIcon className="h-8 w-8 text-gray-300" />
-              )}
-            </button>
-          ))}
-        </div>
+    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-medium mb-4">Leave a Review</h3>
+      
+      <div className="flex items-center mb-4">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => setRating(star)}
+            className="focus:outline-none"
+          >
+            <FiStar
+              className={`w-8 h-8 ${
+                star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+              }`}
+            />
+          </button>
+        ))}
       </div>
 
-      <div>
-        <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">
-          Review
-        </label>
-        <textarea
-          id="comment"
-          rows={4}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-primary focus:border-primary"
-          placeholder="Write your review here..."
-        />
-      </div>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Share your experience..."
+        className="w-full p-3 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+        rows={4}
+        required
+      />
 
       <button
         type="submit"
-        disabled={submitting}
-        className="w-full bg-primary text-white rounded-lg px-4 py-2 hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={loading}
+        className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
       >
-        {submitting ? 'Submitting...' : 'Submit Review'}
+        {loading ? 'Submitting...' : 'Submit Review'}
       </button>
     </form>
   );

@@ -15,6 +15,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid in participants;
     }
 
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // System collection rules
     match /system/{document} {
       allow read: if true;  // Allow public read access to system documents
@@ -55,12 +60,14 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read: if isAuthenticated() && (
         resource.data.buyerId == request.auth.uid ||
-        resource.data.sellerId == request.auth.uid
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
       );
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (
         resource.data.buyerId == request.auth.uid ||
-        resource.data.sellerId == request.auth.uid
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
       );
     }
 
@@ -100,7 +107,54 @@ service cloud.firestore {
     match /portfolio/{portfolioId} {
       allow read: if true;
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // Allow users to read and write portfolio analytics
+    match /portfolio_analytics/{analyticsId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+    }
+    
+    // Allow users to read and write portfolio reviews
+    match /portfolio_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.reviewerId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.reviewerId == request.auth.uid ||  // Allow reviewer to update their review
+        request.resource.data.status == 'reported'  // Allow users to report reviews
+      );
+      allow delete: if isAuthenticated() && resource.data.reviewerId == request.auth.uid;
+    }
+
+    // Disputes collection rules
+    match /disputes/{disputeId} {
+      allow read: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid ||
+        resource.data.otherPartyId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid ||
+        resource.data.otherPartyId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Messages subcollection rules
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.createdBy == request.auth.uid ||
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.otherPartyId == request.auth.uid ||
+          isAdmin()
+        );
+        allow create: if isAuthenticated() && (
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.createdBy == request.auth.uid ||
+          get(/databases/$(database)/documents/disputes/$(disputeId)).data.otherPartyId == request.auth.uid ||
+          isAdmin()
+        );
+      }
     }
     
     // Default deny all

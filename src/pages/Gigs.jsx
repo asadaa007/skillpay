@@ -25,6 +25,7 @@ const Gigs = () => {
   });
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     fetchGigs();
@@ -131,6 +132,7 @@ const Gigs = () => {
     if (!user) return;
     
     setSaving(true);
+    setFormErrors({});
     
     try {
       // Upload images to ImgBB instead of Firebase Storage
@@ -216,6 +218,9 @@ const Gigs = () => {
       fetchGigs();
     } catch (error) {
       console.error('Error saving gig:', error);
+      if (error.errors) {
+        setFormErrors(error.errors);
+      }
       toast.error(`Failed to save gig: ${error.message}`);
     } finally {
       setSaving(false);
@@ -317,8 +322,13 @@ const Gigs = () => {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                  className={`mt-1 block w-full border ${
+                    formErrors.title ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm`}
                 />
+                {formErrors.title && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.title}</p>
+                )}
               </div>
               
               <div>
@@ -331,7 +341,9 @@ const Gigs = () => {
                   value={formData.category}
                   onChange={handleChange}
                   required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                  className={`mt-1 block w-full border ${
+                    formErrors.category ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm`}
                 >
                   <option value="">Select a category</option>
                   <option value="web-development">Web Development</option>
@@ -341,6 +353,9 @@ const Gigs = () => {
                   <option value="content-writing">Content Writing</option>
                   <option value="digital-marketing">Digital Marketing</option>
                 </select>
+                {formErrors.category && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.category}</p>
+                )}
               </div>
               
               <div>
@@ -356,8 +371,13 @@ const Gigs = () => {
                   required
                   min="0"
                   step="0.01"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                  className={`mt-1 block w-full border ${
+                    formErrors.price ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm`}
                 />
+                {formErrors.price && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.price}</p>
+                )}
               </div>
               
               <div>
@@ -372,8 +392,13 @@ const Gigs = () => {
                   onChange={handleChange}
                   required
                   min="1"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                  className={`mt-1 block w-full border ${
+                    formErrors.deliveryTime ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm`}
                 />
+                {formErrors.deliveryTime && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.deliveryTime}</p>
+                )}
               </div>
               
               <div>
@@ -388,8 +413,13 @@ const Gigs = () => {
                   onChange={handleChange}
                   required
                   min="0"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                  className={`mt-1 block w-full border ${
+                    formErrors.revisions ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm`}
                 />
+                {formErrors.revisions && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.revisions}</p>
+                )}
               </div>
             </div>
             
@@ -418,22 +448,29 @@ const Gigs = () => {
                     type="text"
                     value={feature}
                     onChange={(e) => handleFeatureChange(index, e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                    placeholder="Enter a feature"
+                    placeholder={`Feature ${index + 1}`}
+                    className={`flex-1 border ${
+                      formErrors.features ? 'border-red-500' : 'border-gray-300'
+                    } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeFeature(index)}
-                    className="btn-secondary"
-                  >
-                    Remove
-                  </button>
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => removeFeature(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
               ))}
+              {formErrors.features && (
+                <p className="mt-1 text-sm text-red-600">{formErrors.features}</p>
+              )}
               <button
                 type="button"
                 onClick={addFeature}
-                className="btn-secondary mt-2"
+                className="mt-2 text-primary hover:text-primary-dark"
               >
                 Add Feature
               </button>
@@ -461,12 +498,17 @@ const Gigs = () => {
                   </div>
                 ))}
               </div>
+              {formErrors.images && (
+                <p className="mt-1 text-sm text-red-600">{formErrors.images}</p>
+              )}
               <input
                 type="file"
                 accept="image/*"
                 multiple
                 onChange={handleImageChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark"
+                className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark ${
+                  formErrors.images ? 'border-red-500' : ''
+                }`}
               />
             </div>
             

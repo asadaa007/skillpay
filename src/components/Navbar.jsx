@@ -56,6 +56,7 @@ const Navbar = () => {
 
   // User-specific navigation items (shown only when logged in)
   const userNavigation = [
+    { name: 'Profile', href: '/profile', icon: UserCircleIcon },
     { name: 'Dashboard', href: '/dashboard', icon: ChartBarIcon },
     { name: 'Portfolio', href: '/portfolio', icon: FolderIcon },
     { name: 'Gigs', href: '/gigs', icon: BriefcaseIcon },

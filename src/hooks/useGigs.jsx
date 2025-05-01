@@ -88,10 +88,89 @@ export const useGigs = () => {
     }
   };
 
+  const validateGigData = (gigData) => {
+    const errors = {};
+
+    // Title validation
+    if (!gigData.title) {
+      errors.title = 'Title is required';
+    } else if (gigData.title.length < 5 || gigData.title.length > 100) {
+      errors.title = 'Title must be between 5 and 100 characters';
+    }
+
+    // Description validation
+    if (!gigData.description) {
+      errors.description = 'Description is required';
+    } else if (gigData.description.length < 20 || gigData.description.length > 1000) {
+      errors.description = 'Description must be between 20 and 1000 characters';
+    }
+
+    // Category validation
+    if (!gigData.category) {
+      errors.category = 'Category is required';
+    }
+
+    // Price validation
+    const price = parseFloat(gigData.price);
+    if (!price || isNaN(price)) {
+      errors.price = 'Price is required and must be a number';
+    } else if (price < 5 || price > 10000) {
+      errors.price = 'Price must be between $5 and $10,000';
+    }
+
+    // Delivery time validation
+    const deliveryTime = parseInt(gigData.deliveryTime);
+    if (!deliveryTime || isNaN(deliveryTime)) {
+      errors.deliveryTime = 'Delivery time is required and must be a number';
+    } else if (deliveryTime < 1 || deliveryTime > 90) {
+      errors.deliveryTime = 'Delivery time must be between 1 and 90 days';
+    }
+
+    // Revisions validation
+    const revisions = parseInt(gigData.revisions);
+    if (!revisions || isNaN(revisions)) {
+      errors.revisions = 'Number of revisions is required and must be a number';
+    } else if (revisions < 0 || revisions > 20) {
+      errors.revisions = 'Number of revisions must be between 0 and 20';
+    }
+
+    // Features validation
+    if (!gigData.features || !Array.isArray(gigData.features)) {
+      errors.features = 'Features must be an array';
+    } else {
+      const validFeatures = gigData.features.filter(feature => feature.trim().length > 0);
+      if (validFeatures.length === 0) {
+        errors.features = 'At least one feature is required';
+      }
+    }
+
+    // Images validation
+    if (!gigData.images || !Array.isArray(gigData.images)) {
+      errors.images = 'Images must be an array';
+    } else if (gigData.images.length === 0) {
+      errors.images = 'At least one image is required';
+    } else if (gigData.images.length > 5) {
+      errors.images = 'Maximum 5 images allowed';
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors
+    };
+  };
+
   const createGig = async (gigData, images) => {
     if (!user) {
       toast.error('You must be logged in to create a gig');
       throw new Error('User not authenticated');
+    }
+
+    // Validate gig data
+    const validation = validateGigData({ ...gigData, images: [] }); // Validate without images first
+    if (!validation.isValid) {
+      const errorMessage = Object.values(validation.errors)[0];
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
     }
 
     try {
@@ -104,6 +183,14 @@ export const useGigs = () => {
         if (imageUrl) {
           imageUrls.push(imageUrl);
         }
+      }
+
+      // Validate with images
+      const finalValidation = validateGigData({ ...gigData, images: imageUrls });
+      if (!finalValidation.isValid) {
+        const errorMessage = Object.values(finalValidation.errors)[0];
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
       
       // Create gig document
