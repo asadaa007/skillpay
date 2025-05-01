@@ -531,80 +531,87 @@ const Jobs = () => {
     }
 
     try {
-      let attachmentUrl = '';
+      // First verify we can access the job
+      const jobRef = doc(db, 'jobs', selectedJob.id);
+      const jobDoc = await getDoc(jobRef);
       
-      // Upload attachment if exists using IMGBB
-      if (applicationForm.attachment) {
-        const file = applicationForm.attachment;
-        
-        // Validate file size (10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error('File size must be less than 10MB');
-          return;
-        }
-
-        // Create FormData for IMGBB upload
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
-
-        try {
-          const response = await fetch('https://api.imgbb.com/1/upload', {
-            method: 'POST',
-            body: formData
-          });
-          
-          const data = await response.json();
-          if (data.success) {
-            attachmentUrl = data.data.url;
-          } else {
-            toast.error('Failed to upload file. Please try again.');
-            return;
-          }
-        } catch (uploadError) {
-          console.error('Error uploading file:', uploadError);
-          toast.error('Failed to upload file. Please try again.');
-          return;
-        }
+      if (!jobDoc.exists()) {
+        toast.error('Job no longer exists');
+        return;
       }
 
-      // Create the application first
+      const jobData = jobDoc.data();
+
+      // Verify user is not applying to their own job
+      if (jobData.clientId === user.uid) {
+        toast.error('You cannot apply to your own job');
+        return;
+      }
+
+      // Check if user has already applied
+      if (jobData.applications && jobData.applications.includes(user.uid)) {
+        toast.error('You have already applied to this job');
+        return;
+      }
+
+      // Check daily application limit
+      if (dailyApplicationCount >= 10) {
+        toast.error('You have reached your daily application limit (10)');
+        return;
+      }
+
+      // Create minimal application document first
       const applicationData = {
         jobId: selectedJob.id,
         jobTitle: selectedJob.title,
         freelancerId: user.uid,
-        freelancerName: user.displayName || 'Anonymous',
-        freelancerPhoto: user.photoURL || '',
-        clientId: selectedJob.clientId,
-        coverLetter: applicationForm.coverLetter,
+        clientId: jobData.clientId,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        // Add other required fields with safe defaults
+        coverLetter: applicationForm.coverLetter || '',
         proposedBudget: Number(applicationForm.proposedBudget) || 0,
         estimatedTime: Number(applicationForm.estimatedTime) || 0,
-        relevantExperience: applicationForm.relevantExperience,
-        attachmentUrl,
-        status: 'pending',
-        createdAt: serverTimestamp()
+        relevantExperience: applicationForm.relevantExperience || '',
+        attachmentUrl: '',
+        freelancerName: user.displayName || 'Anonymous',
+        freelancerPhoto: user.photoURL || ''
       };
 
-      // Add application to Firestore
+      // Debug log
+      console.log('Creating application with data:', {
+        ...applicationData,
+        authUserId: user.uid,
+        isAuthenticated: !!user
+      });
+
+      // Try to create the application document
       const applicationRef = await addDoc(collection(db, 'applications'), applicationData);
 
-      // Then update job's applications array
-      const jobRef = doc(db, 'jobs', selectedJob.id);
+      if (!applicationRef.id) {
+        throw new Error('Failed to create application');
+      }
+
+      // If we get here, application was created successfully
+      console.log('Application created successfully with ID:', applicationRef.id);
+
+      // Now update the job's applications array
       await updateDoc(jobRef, {
         applications: arrayUnion(user.uid)
       });
 
-      // Finally, update user's application count
+      // Finally update user's credits and application count
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         credits: increment(-1),
         dailyApplicationCount: increment(1)
       });
 
+      // Update local state
       setUserCredits(prev => prev - 1);
       setDailyApplicationCount(prev => prev + 1);
-      
-      toast.success('Application submitted successfully');
+
+      // Clear form and show success message
       setShowApplicationModal(false);
       setApplicationForm({
         coverLetter: '',
@@ -613,8 +620,17 @@ const Jobs = () => {
         relevantExperience: '',
         attachment: null
       });
+      
+      toast.success('Application submitted successfully');
     } catch (error) {
       console.error('Error submitting application:', error);
+      // Log detailed error information
+      console.log('Error details:', {
+        code: error.code,
+        message: error.message,
+        userId: user.uid,
+        jobId: selectedJob.id
+      });
       toast.error('Failed to submit application. Please try again.');
     }
   };
@@ -754,7 +770,18 @@ const Jobs = () => {
         hiredFreelancer: null
       };
 
+      // Add the job to Firestore
       await addDoc(collection(db, 'jobs'), jobData);
+
+      // Update user's daily job count
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        dailyJobCount: increment(1)
+      });
+
+      // Update local state
+      setDailyJobCount(prev => prev + 1);
+
       toast.success('Job posted successfully');
       setShowJobForm(false);
       setJobFormData({

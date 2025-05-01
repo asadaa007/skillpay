@@ -10,7 +10,6 @@ const CategoriesNav = () => {
   useEffect(() => {
     const handleScroll = () => {
       const isScrolled = window.scrollY > 50; // Reduced threshold to 50px
-      console.log('Scroll position:', window.scrollY, 'Show nav:', isScrolled);
       if (isScrolled !== showNav) {
         setShowNav(isScrolled);
       }
@@ -39,12 +38,16 @@ const CategoriesNav = () => {
 
   // Categories data with correct routes
   const categories = [
-    { name: 'Web Development', href: '/web-development' },
-    { name: 'Mobile Development', href: '/mobile-development' },
-    { name: 'UI/UX Design', href: '/ui-design' },
-    { name: 'Writing', href: '/writing' },
-    { name: 'Marketing', href: '/marketing' },
-    { name: 'Other Services', href: '/other-services' }
+    { name: 'All', path: '/gigs' },
+    { name: 'Graphics & Design', path: '/gigs?category=graphics-design' },
+    { name: 'Digital Marketing', path: '/gigs?category=digital-marketing' },
+    { name: 'Writing & Translation', path: '/gigs?category=writing-translation' },
+    { name: 'Video & Animation', path: '/gigs?category=video-animation' },
+    { name: 'Music & Audio', path: '/gigs?category=music-audio' },
+    { name: 'Programming & Tech', path: '/gigs?category=programming-tech' },
+    { name: 'Data', path: '/gigs?category=data' },
+    { name: 'Business', path: '/gigs?category=business' },
+    { name: 'Lifestyle', path: '/gigs?category=lifestyle' },
   ];
 
   if (!showNav) return null;
@@ -70,11 +73,12 @@ const CategoriesNav = () => {
             {categories.map((category) => (
               <Link
                 key={category.name}
-                to={category.href}
-                className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-md mr-2 ${
-                  location.pathname === category.href
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                to={category.path}
+                className={`whitespace-nowrap text-sm font-medium mr-5 ${
+                  location.pathname === category.path || 
+                  (category.path.includes('?') && location.pathname + location.search === category.path)
+                    ? 'text-primary'
+                    : 'text-gray-600 hover:text-primary'
                 }`}
               >
                 {category.name}
