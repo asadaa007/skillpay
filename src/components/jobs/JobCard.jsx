@@ -101,14 +101,25 @@ const JobCard = ({ job, user, countries, onApply, onDelete, onEdit }) => {
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-2 text-left">Required Skills</h4>
               <div className="flex flex-wrap gap-2">
-                {job.skills?.split(',').map((skill, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                  >
-                    {skill.trim()}
-                  </span>
-                ))}
+                {Array.isArray(job.skills) ? (
+                  job.skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                    >
+                      {skill}
+                    </span>
+                  ))
+                ) : typeof job.skills === 'string' ? (
+                  job.skills.split(',').map((skill, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                    >
+                      {skill.trim()}
+                    </span>
+                  ))
+                ) : null}
               </div>
             </div>
           </div>

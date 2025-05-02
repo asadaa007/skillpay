@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../config/firebase';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, increment, writeBatch, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, increment, writeBatch, orderBy, limit, getDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import JobHeader from '../components/jobs/JobHeader';
 import JobFilters from '../components/jobs/JobFilters';
@@ -19,7 +19,10 @@ const Jobs = () => {
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [userCredits, setUserCredits] = useState(0);
+  const [userCredits, setUserCredits] = useState({
+    jobPostingCredits: 5,
+    jobApplicationCredits: 10
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedType, setSelectedType] = useState('');
@@ -75,14 +78,45 @@ const Jobs = () => {
     { code: 'ZA', name: 'South Africa', flag: '🇿🇦' }
   ];
 
-  // Fetch user credits
+  // Add this useEffect to fetch user credits
   useEffect(() => {
     const fetchUserCredits = async () => {
       if (user) {
         try {
-          const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', user.uid)));
-          if (!userDoc.empty) {
-            setUserCredits(userDoc.docs[0].data().credits || 0);
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            
+            // Get today's date at midnight
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Get the last reset date
+            const lastResetDate = userData.lastCreditReset?.toDate?.() || new Date(0);
+            
+            // If it's a new day, reset credits
+            if (lastResetDate < today) {
+              // Update user document with reset credits
+              await updateDoc(doc(db, 'users', user.uid), {
+                jobPostsRemaining: 5,
+                jobApplicationsRemaining: 10,
+                lastCreditReset: serverTimestamp()
+              });
+              
+              setUserCredits({
+                jobPostingCredits: 5,
+                jobApplicationCredits: 10
+              });
+            } else {
+              // Use existing credits
+              const jobPostsRemaining = Math.max(0, userData.jobPostsRemaining ?? 5);
+              const jobApplicationsRemaining = Math.max(0, userData.jobApplicationsRemaining ?? 10);
+              
+              setUserCredits({
+                jobPostingCredits: jobPostsRemaining,
+                jobApplicationCredits: jobApplicationsRemaining
+              });
+            }
           }
         } catch (error) {
           console.error('Error fetching user credits:', error);
@@ -144,7 +178,6 @@ const Jobs = () => {
         const now = new Date();
         const jobsQuery = query(
           collection(db, 'jobs'),
-          where('deadline', '<', now),
           where('status', '==', 'open')
         );
         
@@ -152,7 +185,17 @@ const Jobs = () => {
         const batch = writeBatch(db);
         
         querySnapshot.forEach((doc) => {
-          batch.update(doc.ref, { status: 'expired' });
+          const jobData = doc.data();
+          const deadline = jobData.deadline;
+          
+          // Handle both Firestore Timestamp and regular Date objects
+          const deadlineDate = deadline instanceof Date 
+            ? deadline 
+            : deadline?.toDate?.() || null;
+          
+          if (deadlineDate && deadlineDate < now) {
+            batch.update(doc.ref, { status: 'expired' });
+          }
         });
         
         await batch.commit();
@@ -202,59 +245,44 @@ const Jobs = () => {
 
   const handleJobPost = async (e) => {
     e.preventDefault();
+    
     if (!user) {
-      toast.error('Please login to post a job');
+      toast.error('Please log in to post a job');
+      return;
+    }
+
+    if (userCredits.jobPostingCredits < 1) {
+      toast.error('You have no remaining job posting credits for today');
       return;
     }
 
     try {
-      // Check if user has enough credits
-      if (userCredits < 1) {
-        toast.error('You need at least 1 credit to post a job');
-        return;
-      }
-
-      // Calculate deadline
-      let deadlineDate;
-      if (jobFormData.isUrgent) {
-        // Set deadline to 24 hours from now
-        deadlineDate = new Date();
-        deadlineDate.setHours(deadlineDate.getHours() + 24);
-      } else {
-        deadlineDate = new Date(jobFormData.deadline);
-      }
-
-      const jobData = {
-        title: jobFormData.title,
-        description: jobFormData.description,
-        budget: jobFormData.type === 'fixed' ? Number(jobFormData.budget) : 0,
-        hourlyRate: jobFormData.type === 'hourly' ? Number(jobFormData.hourlyRate) : 0,
-        type: jobFormData.type,
-        category: jobFormData.category,
-        experience: jobFormData.experience,
-        skills: jobFormData.skills.split(',').map(skill => skill.trim()),
-        country: jobFormData.country,
+      const batch = writeBatch(db);
+      
+      // Create job document
+      const jobRef = doc(collection(db, 'jobs'));
+      batch.set(jobRef, {
+        ...jobFormData,
         clientId: user.uid,
-        clientName: user.displayName || 'Anonymous',
-        clientPhoto: user.photoURL || '',
         status: 'open',
         createdAt: serverTimestamp(),
-        deadline: deadlineDate,
-        isUrgent: jobFormData.isUrgent,
         applications: []
-      };
-
-      // Create job document
-      const jobRef = await addDoc(collection(db, 'jobs'), jobData);
-
-      // Update user's credits
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        credits: increment(-1)
       });
 
+      // Update user's job posting credits
+      const userRef = doc(db, 'users', user.uid);
+      batch.update(userRef, {
+        jobPostsRemaining: increment(-1)
+      });
+
+      await batch.commit();
+      
       // Update local state
-      setUserCredits(prev => prev - 1);
+      setUserCredits(prev => ({
+        ...prev,
+        jobPostingCredits: prev.jobPostingCredits - 1
+      }));
+      
       setShowJobPostingModal(false);
       setJobFormData({
         title: '',
@@ -269,8 +297,8 @@ const Jobs = () => {
         experience: 'entry',
         country: 'US'
       });
-
-      toast.success('Job posted successfully');
+      
+      toast.success('Job posted successfully!');
     } catch (error) {
       console.error('Error posting job:', error);
       toast.error('Failed to post job. Please try again.');
@@ -457,6 +485,8 @@ const Jobs = () => {
         totalJobs={totalJobs}
         openJobs={openJobs}
         hiredJobs={hiredJobs}
+        jobPostingCredits={userCredits.jobPostingCredits}
+        jobApplicationCredits={userCredits.jobApplicationCredits}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -516,7 +546,8 @@ const Jobs = () => {
           setShowJobPostingModal={setShowJobPostingModal}
           categories={categories}
           countries={countries}
-          userCredits={userCredits}
+          jobPostingCredits={userCredits.jobPostingCredits}
+          jobApplicationCredits={userCredits.jobApplicationCredits}
         />
       )}
 
