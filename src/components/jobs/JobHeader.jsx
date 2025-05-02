@@ -7,7 +7,9 @@ const JobHeader = ({
   setShowJobPostingModal, 
   totalJobs, 
   openJobs, 
-  hiredJobs 
+  hiredJobs,
+  jobPostingCredits,
+  jobApplicationCredits
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -31,21 +33,38 @@ const JobHeader = ({
           </div>
         </div>
 
-        {/* Right Section - Post Job Button */}
-        <div className="lg:w-48 flex-shrink-0">
+        {/* Right Section - Post Job Button and Credits */}
+        <div className="lg:w-64 flex-shrink-0 space-y-4">
           {user ? (
-            <button
-              onClick={() => setShowJobPostingModal(true)}
-              disabled={userCredits < 1}
-              className={`w-full px-4 py-2 rounded-md text-white transition-colors flex items-center justify-center space-x-2 ${
-                userCredits < 1
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-primary hover:bg-primary-dark'
-              }`}
-            >
-              <PlusIcon className="h-5 w-5" />
-              <span>Post a Job</span>
-            </button>
+            <>
+              <button
+                onClick={() => setShowJobPostingModal(true)}
+                disabled={jobPostingCredits < 1}
+                className={`w-full px-4 py-2 rounded-md text-white transition-colors flex items-center justify-center space-x-2 ${
+                  jobPostingCredits < 1
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-primary hover:bg-primary-dark'
+                }`}
+              >
+                <PlusIcon className="h-5 w-5" />
+                <span>Post a Job</span>
+              </button>
+              
+              {/* Credits Information */}
+              <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Job Posting Credits</span>
+                  <span className="text-sm font-medium text-gray-900">{jobPostingCredits}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Application Credits</span>
+                  <span className="text-sm font-medium text-gray-900">{jobApplicationCredits}</span>
+                </div>
+                <div className="text-xs text-gray-500 mt-2">
+                  Credits reset daily at midnight
+                </div>
+              </div>
+            </>
           ) : (
             <button
               onClick={() => setShowJobPostingModal(true)}
@@ -54,11 +73,6 @@ const JobHeader = ({
               <PlusIcon className="h-5 w-5" />
               <span>Post a Job</span>
             </button>
-          )}
-          {user && userCredits < 1 && (
-            <p className="text-sm text-red-600 mt-2 text-center">
-              You need at least 1 credit to post a job
-            </p>
           )}
         </div>
       </div>

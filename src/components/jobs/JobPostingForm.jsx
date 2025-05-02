@@ -8,7 +8,8 @@ const JobPostingForm = ({
   setShowJobPostingModal,
   categories,
   countries,
-  userCredits
+  jobPostingCredits,
+  jobApplicationCredits
 }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -21,6 +22,16 @@ const JobPostingForm = ({
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
+        </div>
+
+        {/* Credits Info */}
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+          <p className="text-sm text-gray-600">
+            Remaining Job Posting Credits: <span className="font-medium">{jobPostingCredits}</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            Remaining Application Credits: <span className="font-medium">{jobApplicationCredits}</span>
+          </p>
         </div>
 
         <form onSubmit={handleJobPost} className="space-y-6">
@@ -198,13 +209,6 @@ const JobPostingForm = ({
             </label>
           </div>
 
-          {/* Credits Info */}
-          <div className="bg-yellow-50 p-4 rounded-md">
-            <p className="text-sm text-yellow-700">
-              This will cost 1 credit. You have {userCredits} credits remaining.
-            </p>
-          </div>
-
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">
             <button
@@ -216,9 +220,9 @@ const JobPostingForm = ({
             </button>
             <button
               type="submit"
-              disabled={userCredits < 1}
+              disabled={jobPostingCredits < 1}
               className={`px-4 py-2 rounded-md text-white transition-colors ${
-                userCredits < 1
+                jobPostingCredits < 1
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-primary hover:bg-primary-dark'
               }`}

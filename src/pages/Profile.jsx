@@ -62,6 +62,8 @@ const Profile = () => {
             languages: Array.isArray(data.languages) ? data.languages : [],
             portfolio: Array.isArray(data.portfolio) ? data.portfolio : [],
             certifications: Array.isArray(data.certifications) ? data.certifications : [],
+            jobPostsRemaining: Math.max(0, data.jobPostsRemaining || 5),
+            jobApplicationsRemaining: Math.max(0, data.jobApplicationsRemaining || 10),
             paymentInfo: data.paymentInfo || {
               bankName: '',
               accountNumber: '',
@@ -225,24 +227,24 @@ const Profile = () => {
                 <div>
                   <div className="flex justify-between text-sm mb-3">
                     <span className="text-gray-700">Job Posts</span>
-                    <span className="text-gray-900">5 remaining</span>
+                    <span className="text-gray-900">{profileData.jobPostsRemaining} remaining</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded h-1.5">
                     <div 
                       className="bg-emerald-500 rounded h-1.5 transition-all duration-300" 
-                      style={{ width: '100%' }}
+                      style={{ width: `${(profileData.jobPostsRemaining / 5) * 100}%` }}
                     ></div>
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-3">
                     <span className="text-gray-700">Job Applications</span>
-                    <span className="text-gray-900">10 remaining</span>
+                    <span className="text-gray-900">{profileData.jobApplicationsRemaining} remaining</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded h-1.5">
                     <div 
                       className="bg-emerald-500 rounded h-1.5 transition-all duration-300" 
-                      style={{ width: '100%' }}
+                      style={{ width: `${(profileData.jobApplicationsRemaining / 10) * 100}%` }}
                     ></div>
                   </div>
                 </div>
