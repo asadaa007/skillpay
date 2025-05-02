@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -26,10 +26,12 @@ const Login = () => {
     setLoading(true);
     
     try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
+      const user = await login(formData.email, formData.password);
+      if (user) {
+        navigate('/dashboard');
+      }
     } catch (error) {
-      // Error is handled by the login function
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
