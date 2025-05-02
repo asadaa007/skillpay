@@ -383,7 +383,7 @@ const Jobs = () => {
         await setDoc(userRef, {
           uid: user.uid,
           credits: 10,
-          lastCreditReset: new Date(),
+          lastCreditReset: serverTimestamp(),
           displayName: user.displayName,
           email: user.email,
           photoURL: user.photoURL
@@ -392,7 +392,11 @@ const Jobs = () => {
       } else {
         // Check if credits need to be reset (once per day)
         const userData = userDoc.data();
-        const lastReset = userData.lastCreditReset?.toDate() || new Date(0);
+        const lastReset = userData.lastCreditReset ? 
+          (typeof userData.lastCreditReset.toDate === 'function' ? 
+            userData.lastCreditReset.toDate() : 
+            new Date(userData.lastCreditReset)) : 
+          new Date(0);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -400,7 +404,7 @@ const Jobs = () => {
           // Reset credits to 10
           await updateDoc(userRef, {
             credits: 10,
-            lastCreditReset: new Date()
+            lastCreditReset: serverTimestamp()
           });
           setUserCredits(10);
         } else {
@@ -560,7 +564,7 @@ const Jobs = () => {
         return;
       }
 
-      // Create minimal application document first
+      // Create application document
       const applicationData = {
         jobId: selectedJob.id,
         jobTitle: selectedJob.title,
@@ -568,7 +572,6 @@ const Jobs = () => {
         clientId: jobData.clientId,
         status: 'pending',
         createdAt: serverTimestamp(),
-        // Add other required fields with safe defaults
         coverLetter: applicationForm.coverLetter || '',
         proposedBudget: Number(applicationForm.proposedBudget) || 0,
         estimatedTime: Number(applicationForm.estimatedTime) || 0,
@@ -578,33 +581,19 @@ const Jobs = () => {
         freelancerPhoto: user.photoURL || ''
       };
 
-      // Debug log
-      console.log('Creating application with data:', {
-        ...applicationData,
-        authUserId: user.uid,
-        isAuthenticated: !!user
-      });
-
-      // Try to create the application document
+      // Create the application document first
       const applicationRef = await addDoc(collection(db, 'applications'), applicationData);
 
-      if (!applicationRef.id) {
-        throw new Error('Failed to create application');
-      }
-
-      // If we get here, application was created successfully
-      console.log('Application created successfully with ID:', applicationRef.id);
-
-      // Now update the job's applications array
-      await updateDoc(jobRef, {
-        applications: arrayUnion(user.uid)
-      });
-
-      // Finally update user's credits and application count
+      // Update user's credits and application count
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         credits: increment(-1),
         dailyApplicationCount: increment(1)
+      });
+
+      // Update the job's applications array last
+      await updateDoc(jobRef, {
+        applications: arrayUnion(user.uid)
       });
 
       // Update local state
@@ -623,14 +612,6 @@ const Jobs = () => {
       
       toast.success('Application submitted successfully');
     } catch (error) {
-      console.error('Error submitting application:', error);
-      // Log detailed error information
-      console.log('Error details:', {
-        code: error.code,
-        message: error.message,
-        userId: user.uid,
-        jobId: selectedJob.id
-      });
       toast.error('Failed to submit application. Please try again.');
     }
   };

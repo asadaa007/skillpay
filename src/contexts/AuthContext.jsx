@@ -137,7 +137,21 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
-      toast.success('Logged in successfully!');
+      // Get user data from Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const updatedUser = {
+          ...user,
+          fullName: userData.fullName || user.displayName || '',
+          avatar: userData.avatar || user.photoURL || '',
+          userType: userData.userType || 'freelancer',
+          ...userData
+        };
+        setUser(updatedUser);
+        toast.success('Logged in successfully!');
+        return updatedUser;
+      }
       return user;
     } catch (error) {
       console.error('Error logging in:', error);
