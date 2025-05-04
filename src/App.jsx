@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
@@ -28,6 +28,14 @@ import Marketing from './pages/Marketing';
 import OtherServices from './pages/OtherServices';
 import Skills from './pages/Skills';
 import ForgotPassword from './pages/ForgotPassword';
+import ProfileSettings from './components/Profile/ProfileSettings';
+import BillingPayments from './components/Profile/BillingPayments';
+import MembershipConnects from './components/Profile/MembershipConnects';
+import ContactInfo from './components/Profile/ContactInfo';
+import GetPaid from './components/Profile/GetPaid';
+import MyTeams from './components/Profile/MyTeams';
+import PasswordSecurity from './components/Profile/PasswordSecurity';
+import NotificationSettings from './components/Profile/NotificationSettings';
 import './App.css';
 
 // Protected Route component
@@ -92,6 +100,23 @@ const App = () => {
                 path="/profile/:userId" 
                 element={<PublicProfile />} 
               />
+              <Route 
+                path="/profile/settings" 
+                element={
+                  <ProtectedRoute>
+                    <ProfileSettings />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="billing" element={<BillingPayments />} />
+                <Route path="membership" element={<MembershipConnects />} />
+                <Route path="contact" element={<ContactInfo />} />
+                <Route path="get-paid" element={<GetPaid />} />
+                <Route path="my-teams" element={<MyTeams />} />
+                <Route path="password-security" element={<PasswordSecurity />} />
+                <Route path="notification-settings" element={<NotificationSettings />} />
+                <Route index element={null} />
+              </Route>
               <Route 
                 path="/portfolio" 
                 element={

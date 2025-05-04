@@ -35,45 +35,33 @@ const JobHeader = ({
 
         {/* Right Section - Post Job Button and Credits */}
         <div className="lg:w-64 flex-shrink-0 space-y-4">
-          {user ? (
-            <>
-              <button
-                onClick={() => setShowJobPostingModal(true)}
-                disabled={jobPostingCredits < 1}
-                className={`w-full px-4 py-2 rounded-md text-white transition-colors flex items-center justify-center space-x-2 ${
-                  jobPostingCredits < 1
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-primary hover:bg-primary-dark'
-                }`}
-              >
-                <PlusIcon className="h-5 w-5" />
-                <span>Post a Job</span>
-              </button>
-              
-              {/* Credits Information */}
-              <div className="bg-gray-50 p-3 rounded-lg space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Job Posting Credits</span>
-                  <span className="text-sm font-medium text-gray-900">{jobPostingCredits}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Application Credits</span>
-                  <span className="text-sm font-medium text-gray-900">{jobApplicationCredits}</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">
-                  Credits reset daily at midnight
-                </div>
-              </div>
-            </>
-          ) : (
-            <button
-              onClick={() => setShowJobPostingModal(true)}
-              className="w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors flex items-center justify-center space-x-2"
-            >
-              <PlusIcon className="h-5 w-5" />
-              <span>Post a Job</span>
-            </button>
-          )}
+          <button
+            onClick={() => setShowJobPostingModal(true)}
+            disabled={!user || jobPostingCredits < 1}
+            className={`w-full px-4 py-2 rounded-md text-white transition-colors flex items-center justify-center space-x-2 ${
+              !user || jobPostingCredits < 1
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-primary hover:bg-primary-dark'
+            }`}
+          >
+            <PlusIcon className="h-5 w-5" />
+            <span>{!user ? 'Login to Post a Job' : 'Post a Job'}</span>
+          </button>
+          
+          {/* Credits Information */}
+          <div className={`bg-gray-50 p-3 rounded-lg space-y-2 ${!user ? 'opacity-50 blur-[1px]' : ''}`}>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Job Posting Credits</span>
+              <span className="text-sm font-medium text-gray-900">{jobPostingCredits}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Application Credits</span>
+              <span className="text-sm font-medium text-gray-900">{jobApplicationCredits}</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              Credits reset daily at midnight
+            </div>
+          </div>
         </div>
       </div>
     </div>
