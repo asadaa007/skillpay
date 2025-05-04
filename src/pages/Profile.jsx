@@ -7,12 +7,11 @@ import {
   FiEdit2, FiUpload, FiUser, FiBriefcase, FiSettings, 
   FiAward, FiDollarSign, FiGlobe, FiStar, FiClock,
   FiBook, FiCheckCircle, FiMapPin, FiMail, FiPhone,
-  FiGithub, FiLinkedin, FiTwitter
+  FiGithub, FiLinkedin, FiTwitter, FiShare2
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { uploadImageToImgBB } from '../utils/imageUpload';
 import ImageUpload from '../components/ImageUpload';
-import EditSectionModal from '../components/Profile/EditProfileModal';
 import SkillVerificationManager from '../components/Skills/SkillVerificationManager';
 import ReviewsManager from '../components/Reviews/ReviewsManager';
 
@@ -20,7 +19,6 @@ const Profile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeModal, setActiveModal] = useState(null);
   const [profileData, setProfileData] = useState({
     fullName: '',
     title: '',
@@ -147,21 +145,12 @@ const Profile = () => {
         updatedAt: new Date()
       });
       toast.success('Profile updated successfully');
-      setActiveModal(null);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleModalClose = () => {
-    setActiveModal(null);
-  };
-
-  const handleModalOpen = (section) => {
-    setActiveModal(section);
   };
 
   if (loading) {
@@ -175,41 +164,54 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Profile Header - Full Width */}
-      <div className="bg-white shadow-sm">
-        <div className="relative h-32 bg-primary">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="absolute -bottom-12 left-8">
-              <ImageUpload
-                currentImageUrl={profileData.avatar}
-                onImageUploaded={handleAvatarUpload}
-                placeholder="Upload Profile Picture"
-                className="w-24 h-24 rounded-full border-4 border-white shadow-lg bg-white"
-                imageClassName="w-24 h-24 rounded-full object-cover"
+      <div className="bg-white shadow-lg pt-20 pb-10 border border-gray-100">
+        <div className="max-w-5xl mx-auto px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          {/* Left: Profile Image and Info */}
+          <div className="flex items-center gap-6 min-w-0">
+            <div className="relative w-24 h-24">
+              <img
+                src={profileData.avatar || '/default-avatar.png'}
+                alt="Profile"
+                className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
               />
+              {/* Online Indicator */}
+              <span className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></span>
+              {/* Edit Icon Overlay */}
+              <button
+                className="absolute bottom-0 right-0 bg-white border border-gray-200 rounded-full p-1.5 shadow hover:bg-gray-100 flex items-center justify-center"
+                title="Edit profile picture"
+                style={{ transform: 'translate(30%, 30%)' }}
+              >
+                <FiEdit2 className="h-5 w-5 text-primary" />
+              </button>
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-3xl font-bold text-gray-900 leading-tight truncate">{profileData.fullName || 'Your Name'}</h1>
+              <div className="flex items-center text-gray-600 text-base gap-2 mt-1">
+                <FiMapPin className="h-4 w-4" />
+                <span className="truncate max-w-[160px]">{profileData.location || 'Your Location'}</span>
+                <span className="mx-1">–</span>
+                <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} local time</span>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="pt-16 pb-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{profileData.fullName}</h1>
-                <p className="text-lg text-gray-600 mt-1">{profileData.title || 'Add your professional title'}</p>
-                <div className="flex items-center mt-2 text-gray-600">
-                  <FiMapPin className="h-4 w-4 mr-1" />
-                  <span>{profileData.location || 'Add location'}</span>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => handleModalOpen('basic')}
-                  className="btn-primary flex items-center"
-                >
-                  <FiEdit2 className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </button>
-              </div>
+          {/* Right: Buttons and Share */}
+          <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 ml-auto mt-4 md:mt-0">
+            <button
+              className="border border-green-600 text-green-600 px-6 py-2 rounded-lg font-semibold hover:bg-green-50 transition text-base"
+            >
+              See public view
+            </button>
+            <Link
+              to="/profile/settings"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              <FiSettings className="mr-2" />
+              Profile Settings
+            </Link>
+            <div className="flex items-center gap-1 text-green-700 cursor-pointer hover:text-green-800 ml-2 text-sm mt-2 md:mt-0">
+              <span>Share</span>
+              <FiShare2 className="w-5 h-5" />
             </div>
           </div>
         </div>
@@ -256,7 +258,6 @@ const Profile = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
                 <button 
-                  onClick={() => handleModalOpen('skills')}
                   className="text-primary hover:text-primary-dark"
                 >
                   <FiEdit2 className="h-4 w-4" />
@@ -282,7 +283,6 @@ const Profile = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Languages</h2>
                 <button 
-                  onClick={() => handleModalOpen('languages')}
                   className="text-primary hover:text-primary-dark"
                 >
                   <FiEdit2 className="h-4 w-4" />
@@ -309,7 +309,6 @@ const Profile = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Links</h2>
                 <button 
-                  onClick={() => handleModalOpen('links')}
                   className="text-primary hover:text-primary-dark"
                 >
                   <FiEdit2 className="h-4 w-4" />
@@ -358,7 +357,6 @@ const Profile = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">About</h2>
                 <button 
-                  onClick={() => handleModalOpen('basic')}
                   className="text-primary hover:text-primary-dark"
                 >
                   <FiEdit2 className="h-4 w-4" />
@@ -374,7 +372,6 @@ const Profile = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Experience</h2>
                 <button 
-                  onClick={() => handleModalOpen('experience')}
                   className="text-primary hover:text-primary-dark"
                 >
                   <FiEdit2 className="h-4 w-4" />
@@ -390,7 +387,6 @@ const Profile = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Education</h2>
                 <button 
-                  onClick={() => handleModalOpen('education')}
                   className="text-primary hover:text-primary-dark"
                 >
                   <FiEdit2 className="h-4 w-4" />
@@ -406,7 +402,6 @@ const Profile = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Certifications</h2>
                 <button 
-                  onClick={() => handleModalOpen('certifications')}
                   className="text-primary hover:text-primary-dark"
                 >
                   <FiEdit2 className="h-4 w-4" />
@@ -427,98 +422,6 @@ const Profile = () => {
           </div>
         </div>
       </div>
-
-      {/* Individual Edit Modals */}
-      <EditSectionModal
-        isOpen={activeModal === 'basic'}
-        onClose={handleModalClose}
-        title="Basic Information"
-        section="basic"
-        profileData={profileData}
-        handleInputChange={handleInputChange}
-        handleArrayInputChange={handleArrayInputChange}
-        handleLanguageChange={handleLanguageChange}
-        handleSubmit={handleSubmit}
-        saving={saving}
-      />
-
-      <EditSectionModal
-        isOpen={activeModal === 'languages'}
-        onClose={handleModalClose}
-        title="Languages"
-        section="languages"
-        profileData={profileData}
-        handleInputChange={handleInputChange}
-        handleArrayInputChange={handleArrayInputChange}
-        handleLanguageChange={handleLanguageChange}
-        handleSubmit={handleSubmit}
-        saving={saving}
-      />
-
-      <EditSectionModal
-        isOpen={activeModal === 'skills'}
-        onClose={handleModalClose}
-        title="Skills"
-        section="skills"
-        profileData={profileData}
-        handleInputChange={handleInputChange}
-        handleArrayInputChange={handleArrayInputChange}
-        handleLanguageChange={handleLanguageChange}
-        handleSubmit={handleSubmit}
-        saving={saving}
-      />
-
-      <EditSectionModal
-        isOpen={activeModal === 'experience'}
-        onClose={handleModalClose}
-        title="Experience"
-        section="experience"
-        profileData={profileData}
-        handleInputChange={handleInputChange}
-        handleArrayInputChange={handleArrayInputChange}
-        handleLanguageChange={handleLanguageChange}
-        handleSubmit={handleSubmit}
-        saving={saving}
-      />
-
-      <EditSectionModal
-        isOpen={activeModal === 'education'}
-        onClose={handleModalClose}
-        title="Education"
-        section="education"
-        profileData={profileData}
-        handleInputChange={handleInputChange}
-        handleArrayInputChange={handleArrayInputChange}
-        handleLanguageChange={handleLanguageChange}
-        handleSubmit={handleSubmit}
-        saving={saving}
-      />
-
-      <EditSectionModal
-        isOpen={activeModal === 'certifications'}
-        onClose={handleModalClose}
-        title="Certifications"
-        section="certifications"
-        profileData={profileData}
-        handleInputChange={handleInputChange}
-        handleArrayInputChange={handleArrayInputChange}
-        handleLanguageChange={handleLanguageChange}
-        handleSubmit={handleSubmit}
-        saving={saving}
-      />
-
-      <EditSectionModal
-        isOpen={activeModal === 'links'}
-        onClose={handleModalClose}
-        title="Social Links"
-        section="links"
-        profileData={profileData}
-        handleInputChange={handleInputChange}
-        handleArrayInputChange={handleArrayInputChange}
-        handleLanguageChange={handleLanguageChange}
-        handleSubmit={handleSubmit}
-        saving={saving}
-      />
     </div>
   );
 };

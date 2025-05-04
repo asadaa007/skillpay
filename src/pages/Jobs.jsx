@@ -259,11 +259,16 @@ const Jobs = () => {
     try {
       const batch = writeBatch(db);
       
+      // Get user's profile data
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      
       // Create job document
       const jobRef = doc(collection(db, 'jobs'));
       batch.set(jobRef, {
         ...jobFormData,
         clientId: user.uid,
+        clientName: user.displayName || userData?.name || 'Anonymous',
         status: 'open',
         createdAt: serverTimestamp(),
         applications: []
