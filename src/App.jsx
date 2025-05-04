@@ -36,6 +36,7 @@ import GetPaid from './components/Profile/GetPaid';
 import MyTeams from './components/Profile/MyTeams';
 import PasswordSecurity from './components/Profile/PasswordSecurity';
 import NotificationSettings from './components/Profile/NotificationSettings';
+import GigView from './pages/GigView';
 import './App.css';
 
 // Protected Route component
@@ -140,6 +141,10 @@ const App = () => {
                     <Gigs />
                   </ProtectedRoute>
                 } 
+              />
+              <Route 
+                path="/gigs/:gigId/view" 
+                element={<GigView />} 
               />
               <Route 
                 path="/gigs/:gigId" 

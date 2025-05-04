@@ -344,12 +344,29 @@ const Jobs = () => {
       };
 
       // Add application to applications collection
-      await addDoc(collection(db, 'applications'), applicationData);
+      const applicationRef = await addDoc(collection(db, 'applications'), applicationData);
 
       // Update job's applications array
       const jobRef = doc(db, 'jobs', selectedJob.id);
       await updateDoc(jobRef, {
         applications: [...selectedJob.applications, user.uid]
+      });
+
+      // Create notification for job poster
+      await addDoc(collection(db, 'notifications'), {
+        userId: selectedJob.clientId,
+        type: 'new_application',
+        title: 'New Application Received',
+        message: `${user.displayName || 'A freelancer'} has applied to your job "${selectedJob.title}"`,
+        read: false,
+        createdAt: serverTimestamp(),
+        jobId: selectedJob.id,
+        data: {
+          freelancerName: user.displayName || 'Anonymous',
+          freelancerPhoto: user.photoURL || '',
+          jobTitle: selectedJob.title,
+          applicationId: applicationRef.id
+        }
       });
 
       // Reset form and close modal

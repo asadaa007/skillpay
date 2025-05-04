@@ -17,11 +17,12 @@ const ApplicationForm = ({
     setIsUploading(true);
 
     try {
+      const apiKey = import.meta.env.VITE_IMGBB_API_KEY;
       const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append('image', file);
         
-        const response = await fetch('https://api.imgbb.com/1/upload?key=YOUR_IMGBB_API_KEY', {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
           method: 'POST',
           body: formData
         });
@@ -57,6 +58,18 @@ const ApplicationForm = ({
     });
   };
 
+  // Ensure portfolioLinks is always in sync on submit
+  const onSubmit = (e) => {
+    // Update portfolioLinks in form data before submit
+    handleApplicationFormChange({
+      target: {
+        name: 'portfolioLinks',
+        value: uploadedFiles.join('\n')
+      }
+    });
+    handleApplicationSubmit(e);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 w-full max-w-5xl h-[90vh] lg:h-auto lg:max-h-[85vh] overflow-y-auto">
@@ -70,7 +83,7 @@ const ApplicationForm = ({
           </button>
         </div>
 
-        <form onSubmit={handleApplicationSubmit} className="space-y-6">
+        <form onSubmit={onSubmit} className="space-y-6">
           {/* Job Title (Read-only) */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <label className="block text-sm font-medium text-gray-700 mb-2">
