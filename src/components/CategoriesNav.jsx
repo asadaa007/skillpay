@@ -38,16 +38,16 @@ const CategoriesNav = () => {
 
   // Categories data with correct routes
   const categories = [
-    { name: 'All', path: '/gigs' },
-    { name: 'Graphics & Design', path: '/gigs?category=graphics-design' },
-    { name: 'Digital Marketing', path: '/gigs?category=digital-marketing' },
-    { name: 'Writing & Translation', path: '/gigs?category=writing-translation' },
-    { name: 'Video & Animation', path: '/gigs?category=video-animation' },
-    { name: 'Music & Audio', path: '/gigs?category=music-audio' },
-    { name: 'Programming & Tech', path: '/gigs?category=programming-tech' },
-    { name: 'Data', path: '/gigs?category=data' },
-    { name: 'Business', path: '/gigs?category=business' },
-    { name: 'Lifestyle', path: '/gigs?category=lifestyle' },
+    { name: 'All', path: '/skills' },
+    { name: 'Graphics & Design', path: '/skills?category=graphics-design' },
+    { name: 'Digital Marketing', path: '/skills?category=digital-marketing' },
+    { name: 'Writing & Translation', path: '/skills?category=writing-translation' },
+    { name: 'Video & Animation', path: '/skills?category=video-animation' },
+    { name: 'Music & Audio', path: '/skills?category=music-audio' },
+    { name: 'Programming & Tech', path: '/skills?category=programming-tech' },
+    { name: 'Data', path: '/skills?category=data' },
+    { name: 'Business', path: '/skills?category=business' },
+    { name: 'Lifestyle', path: '/skills?category=lifestyle' },
   ];
 
   if (!showNav) return null;

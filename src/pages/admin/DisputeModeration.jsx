@@ -189,7 +189,10 @@ const DisputeModeration = () => {
                     <div>
                       <h3 className="font-medium text-gray-900">{dispute.projectTitle}</h3>
                       <p className="text-sm text-gray-500">
-                        Opened on {format(new Date(dispute.createdAt), 'MMM dd, yyyy')}
+                        Opened on {dispute.createdAt ? format(
+                          dispute.createdAt?.toDate ? dispute.createdAt.toDate() : new Date(dispute.createdAt),
+                          'MMM dd, yyyy'
+                        ) : 'Unknown date'}
                       </p>
                     </div>
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(dispute.status)}`}>

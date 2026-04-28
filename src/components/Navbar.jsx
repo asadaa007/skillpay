@@ -13,7 +13,9 @@ import {
   ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
   ChevronDownIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  MagnifyingGlassIcon,
+  ScaleIcon
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import Notifications from './Notifications';
@@ -52,6 +54,7 @@ const Navbar = () => {
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Jobs', href: '/jobs', icon: ClipboardDocumentListIcon },
     { name: 'Skills', href: '/skills', icon: BriefcaseIcon },
+    { name: 'Search', href: '/search', icon: MagnifyingGlassIcon },
   ];
 
   // User-specific navigation items (shown only when logged in)
@@ -62,6 +65,7 @@ const Navbar = () => {
     { name: 'Gigs', href: '/gigs', icon: BriefcaseIcon },
     { name: 'Orders', href: '/orders', icon: ShoppingCartIcon },
     { name: 'Messages', href: '/messages', icon: ChatBubbleLeftIcon },
+    { name: 'Disputes', href: '/disputes', icon: ScaleIcon },
   ];
 
   // Determine which navigation items to show based on user authentication

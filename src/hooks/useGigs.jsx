@@ -4,7 +4,8 @@ import {
   collection, 
   query, 
   where, 
-  getDocs, 
+  getDocs,
+  getDoc,
   addDoc, 
   updateDoc, 
   deleteDoc, 
@@ -277,7 +278,7 @@ export const useGigs = () => {
   const getGigById = async (gigId) => {
     try {
       setLoading(true);
-      const gigDoc = await getDocs(doc(db, 'gigs', gigId));
+      const gigDoc = await getDoc(doc(db, 'gigs', gigId));
       if (!gigDoc.exists()) {
         throw new Error('Gig not found');
       }

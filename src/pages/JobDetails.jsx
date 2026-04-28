@@ -107,42 +107,62 @@ const JobDetails = () => {
   };
 
   const handleAcceptApplication = async (application) => {
+    if (!user || !job) return;
+
     try {
-      // Create a new order
+      // Create the order
       const orderData = {
-        jobId: jobId,
+        jobId: job.id,
         jobTitle: job.title,
-        clientId: job.clientId,
-        freelancerId: application.freelancerId,
-        freelancerName: application.freelancerName,
-        clientName: job.clientName,
-        budget: application.proposedBudget,
-        deadline: application.proposedDeadline,
-        status: 'active',
+        jobDescription: job.description,
+        buyerId: job.clientId,
+        sellerId: application.freelancerId,
+        amount: job.budget,
+        status: 'in_progress',
         createdAt: serverTimestamp(),
-        startDate: serverTimestamp(),
-        description: job.description,
-        skills: job.skills,
-        applicationId: application.id
+        updatedAt: serverTimestamp(),
+        milestones: [],
+        deliverables: job.deliverables || [],
+        timeline: job.timeline || 'Not specified',
+        requirements: job.requirements || []
       };
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
 
-      // Update job status
-      await updateDoc(doc(db, 'jobs', jobId), {
-        status: 'in_progress',
-        acceptedApplicationId: application.id,
-        orderId: orderRef.id
+      // Update job status to hired
+      await updateDoc(doc(db, 'jobs', job.id), {
+        status: 'hired',
+        hiredFreelancerId: application.freelancerId,
+        orderId: orderRef.id,
+        updatedAt: serverTimestamp()
       });
 
-      // Update application status
-      await updateDoc(doc(db, 'applications', application.id), {
-        status: 'accepted',
-        orderId: orderRef.id
+      // Create notification for the freelancer
+      await addDoc(collection(db, 'notifications'), {
+        userId: application.freelancerId,
+        type: 'order_started',
+        title: 'Job Application Accepted',
+        message: `Your application for "${job.title}" has been accepted!`,
+        orderId: orderRef.id,
+        jobId: job.id,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+
+      // Create notification for the client
+      await addDoc(collection(db, 'notifications'), {
+        userId: job.clientId,
+        type: 'order_started',
+        title: 'Order Created',
+        message: `You have hired a freelancer for "${job.title}"`,
+        orderId: orderRef.id,
+        jobId: job.id,
+        read: false,
+        createdAt: serverTimestamp()
       });
 
       toast.success('Application accepted and order created successfully');
-      navigate('/orders');
+      navigate(`/orders/${orderRef.id}`);
     } catch (error) {
       console.error('Error accepting application:', error);
       toast.error('Failed to accept application');
@@ -284,6 +304,7 @@ const JobDetails = () => {
                             src={application.freelancerPhoto}
                             alt={application.freelancerName}
                             className="h-16 w-16 rounded-full object-cover border mb-2"
+                            onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                           />
                         ) : (
                           <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center mb-2">

@@ -61,8 +61,13 @@ const Orders = () => {
           createdAt: doc.data().createdAt?.toDate()
         }));
 
-        // Combine all orders
-        const allOrders = [...buyerOrders, ...sellerOrders];
+        // Deduplicate by id (same doc may appear in both buyer + seller queries)
+        const seen = new Set();
+        const allOrders = [...buyerOrders, ...sellerOrders].filter(o => {
+          if (seen.has(o.id)) return false;
+          seen.add(o.id);
+          return true;
+        });
 
         // Sort orders by createdAt in memory
         allOrders.sort((a, b) => b.createdAt - a.createdAt);
@@ -89,16 +94,34 @@ const Orders = () => {
     // fetchOrders();
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.gigTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.buyerName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredOrders = orders
+    .filter(order => {
+      const title = (order.gigTitle || order.jobTitle || '').toLowerCase();
+      const buyer = (order.buyerName || '').toLowerCase();
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = !searchTerm ||
+        order.id.toLowerCase().includes(term) ||
+        title.includes(term) ||
+        buyer.includes(term);
+      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+      return matchesSearch && matchesStatus && !order.isDeleted;
+    })
+    .sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+      if (sortField === 'amount') {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      } else if (aVal instanceof Date) {
+        // already Date objects from the fetch
+      } else {
+        aVal = String(aVal || '').toLowerCase();
+        bVal = String(bVal || '').toLowerCase();
+      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -132,18 +155,64 @@ const Orders = () => {
     );
   }
 
+  const SortButton = ({ field, label }) => (
+    <button
+      onClick={() => handleSort(field)}
+      className={`flex items-center gap-1 text-sm font-medium ${sortField === field ? 'text-primary' : 'text-gray-600'} hover:text-primary transition-colors`}
+    >
+      {label}
+      {sortField === field && (
+        sortDirection === 'asc' ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />
+      )}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">My Orders</h1>
-        
-        {orders.length === 0 ? (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">My Orders</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search orders…"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary w-48"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary"
+            >
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        {filteredOrders.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 px-1">
+            <span className="text-xs text-gray-500">Sort by:</span>
+            <SortButton field="createdAt" label="Date" />
+            <SortButton field="amount" label="Amount" />
+            <SortButton field="status" label="Status" />
+          </div>
+        )}
+
+        {filteredOrders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-            <p className="text-gray-600">You haven't placed any orders yet.</p>
+            <p className="text-gray-600">{orders.length === 0 ? "You haven't placed any orders yet." : "No orders match your search."}</p>
           </div>
         ) : (
           <div className="space-y-6">
-            {orders.map(order => (
+            {filteredOrders.map(order => (
               <OrderCard key={order.id} order={order} />
             ))}
           </div>

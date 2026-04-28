@@ -6,21 +6,12 @@ import { toast } from 'react-hot-toast';
 import { 
   MagnifyingGlassIcon,
   FunnelIcon,
-  AdjustmentsHorizontalIcon,
   XMarkIcon,
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
+import { GIG_CATEGORIES } from '../constants';
 
-const categories = [
-  'Graphics & Design',
-  'Digital Marketing',
-  'Writing & Translation',
-  'Video & Animation',
-  'Music & Audio',
-  'Programming & Tech',
-  'Business',
-  'Lifestyle'
-];
+const categories = GIG_CATEGORIES;
 
 const priceRanges = [
   { label: 'Under $50', min: 0, max: 50 },
@@ -247,15 +238,21 @@ const Search = () => {
               {gigs.map((gig) => (
                 <Link
                   key={gig.id}
-                  to={`/gigs/${gig.id}`}
+                  to={`/gigs/${gig.id}/view`}
                   className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
                 >
                   <div className="aspect-w-16 aspect-h-9">
-                    <img
-                      src={gig.images[0]}
-                      alt={gig.title}
-                      className="object-cover rounded-t-lg"
-                    />
+                    {gig.images?.[0] ? (
+                      <img
+                        src={gig.images[0]}
+                        alt={gig.title}
+                        className="object-cover rounded-t-lg w-full h-full"
+                      />
+                    ) : (
+                      <div className="w-full h-40 bg-gray-100 rounded-t-lg flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">No image</span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-4">
                     <h3 className="text-lg font-medium text-gray-900 mb-2">

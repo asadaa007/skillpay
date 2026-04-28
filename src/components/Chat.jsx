@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, serverTimestamp, getDocs, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../hooks/useAuth';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
 const Chat = ({ recipientId, recipientName, recipientPhoto, onClose }) => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../config/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { 
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -11,9 +11,12 @@ import {
   UserIcon,
   CurrencyDollarIcon,
   CalendarIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import DisputeForm from '../components/Disputes/DisputeForm';
+import ReviewForm from '../components/Reviews/ReviewForm';
 
 const OrderDetails = () => {
   const { orderId } = useParams();
@@ -22,10 +25,26 @@ const OrderDetails = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [hasReview, setHasReview] = useState(false);
+  const [hasDispute, setHasDispute] = useState(false);
 
   useEffect(() => {
     fetchOrder();
   }, [orderId, user]);
+
+  useEffect(() => {
+    if (!order || !user) return;
+    const checkExisting = async () => {
+      const [reviewSnap, disputeSnap] = await Promise.all([
+        getDocs(query(collection(db, 'reviews'), where('projectId', '==', order.id), where('reviewerId', '==', user.uid))),
+        getDocs(query(collection(db, 'disputes'), where('orderId', '==', order.id), where('createdBy', '==', user.uid))),
+      ]);
+      setHasReview(!reviewSnap.empty);
+      setHasDispute(!disputeSnap.empty);
+    };
+    checkExisting();
+  }, [order, user]);
 
   const fetchOrder = async () => {
     if (!user || !orderId) return;
@@ -45,7 +64,7 @@ const OrderDetails = () => {
       };
       
       // Verify the order belongs to the current user
-      if (orderData.sellerId !== user.uid) {
+      if (orderData.buyerId !== user.uid && orderData.sellerId !== user.uid) {
         toast.error('You do not have permission to view this order');
         navigate('/orders');
         return;
@@ -54,29 +73,56 @@ const OrderDetails = () => {
       setOrder(orderData);
     } catch (error) {
       console.error('Error fetching order:', error);
-      toast.error('Failed to load order details');
+      toast.error('Failed to fetch order details');
     } finally {
       setLoading(false);
     }
   };
 
+  const orderTitle = order?.gigTitle || order?.jobTitle || `Order #${order?.id?.substring(0, 8)}`;
+
   const handleStatusUpdate = async (newStatus) => {
-    if (!order || updating) return;
-    
-    setUpdating(true);
-    
+    if (!order || !user) return;
+
+    // Role-based permission checks
+    if (newStatus === 'in_progress' && order.sellerId !== user.uid) {
+      toast.error('Only the seller can accept this order');
+      return;
+    }
+    if (newStatus === 'completed' && order.buyerId !== user.uid) {
+      toast.error('Only the buyer can mark the order as completed');
+      return;
+    }
+    if (newStatus === 'cancelled' && order.buyerId !== user.uid && order.sellerId !== user.uid) {
+      toast.error('Only the buyer or seller can cancel the order');
+      return;
+    }
+
     try {
+      setUpdating(true);
+
       await updateDoc(doc(db, 'orders', order.id), {
         status: newStatus,
-        updatedAt: new Date()
+        updatedAt: serverTimestamp(),
+        ...(newStatus === 'in_progress' ? { acceptedAt: serverTimestamp() } : {}),
+        ...(newStatus === 'completed' ? { completedAt: serverTimestamp() } : {}),
       });
-      
-      setOrder(prev => ({
-        ...prev,
-        status: newStatus
-      }));
-      
-      toast.success(`Order status updated to ${newStatus}`);
+
+      const otherUserId = user.uid === order.buyerId ? order.sellerId : order.buyerId;
+      const statusLabels = { in_progress: 'accepted', completed: 'completed', cancelled: 'cancelled' };
+
+      await addDoc(collection(db, 'notifications'), {
+        userId: otherUserId,
+        type: 'order_updated',
+        title: `Order ${statusLabels[newStatus] || newStatus}`,
+        message: `"${orderTitle}" has been marked as ${statusLabels[newStatus] || newStatus}`,
+        orderId: order.id,
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+
+      setOrder(prev => ({ ...prev, status: newStatus }));
+      toast.success(`Order marked as ${statusLabels[newStatus] || newStatus}`);
     } catch (error) {
       console.error('Error updating order status:', error);
       toast.error('Failed to update order status');
@@ -87,10 +133,12 @@ const OrderDetails = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
       default:
@@ -100,10 +148,12 @@ const OrderDetails = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircleIcon className="h-5 w-5" />;
       case 'pending':
         return <ClockIcon className="h-5 w-5" />;
+      case 'in_progress':
+        return <ClockIcon className="h-5 w-5" />;
+      case 'completed':
+        return <CheckCircleIcon className="h-5 w-5" />;
       case 'cancelled':
         return <XCircleIcon className="h-5 w-5" />;
       default:
@@ -156,16 +206,31 @@ const OrderDetails = () => {
               </div>
             </div>
             
-            {order.status === 'pending' && (
-              <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {/* Seller: Accept pending order → in_progress */}
+              {order.status === 'pending' && user.uid === order.sellerId && (
+                <button
+                  onClick={() => handleStatusUpdate('in_progress')}
+                  disabled={updating}
+                  className="btn-primary flex items-center"
+                >
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  Accept &amp; Start Work
+                </button>
+              )}
+              {/* Buyer: Confirm delivery → completed */}
+              {order.status === 'in_progress' && user.uid === order.buyerId && (
                 <button
                   onClick={() => handleStatusUpdate('completed')}
                   disabled={updating}
                   className="btn-primary flex items-center"
                 >
                   <CheckCircleIcon className="h-5 w-5 mr-2" />
-                  Mark as Completed
+                  Confirm Delivery
                 </button>
+              )}
+              {/* Either party: cancel while not yet completed */}
+              {['pending', 'in_progress'].includes(order.status) && (
                 <button
                   onClick={() => handleStatusUpdate('cancelled')}
                   disabled={updating}
@@ -174,8 +239,8 @@ const OrderDetails = () => {
                   <XCircleIcon className="h-5 w-5 mr-2" />
                   Cancel Order
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -222,8 +287,8 @@ const OrderDetails = () => {
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Gig Information</h2>
-              
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Parties</h2>
+
               <div className="space-y-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -231,24 +296,36 @@ const OrderDetails = () => {
                   </div>
                   <div className="ml-3">
                     <p className="text-sm font-medium text-gray-500">Buyer</p>
-                    <p className="text-lg font-semibold text-gray-900">{order.buyerName}</p>
+                    <p className="text-lg font-semibold text-gray-900">{order.buyerName || 'Unknown'}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <CurrencyDollarIcon className="h-6 w-6 text-gray-400" />
+                    <UserIcon className="h-6 w-6 text-gray-400" />
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-500">Gig</p>
-                    <Link 
-                      to={`/gigs/${order.gigId}`}
-                      className="text-lg font-semibold text-primary hover:text-primary-dark"
-                    >
-                      {order.gigTitle}
-                    </Link>
+                    <p className="text-sm font-medium text-gray-500">Seller / Freelancer</p>
+                    <p className="text-lg font-semibold text-gray-900">{order.sellerName || order.freelancerName || 'Unknown'}</p>
                   </div>
                 </div>
+
+                {(order.gigId || order.jobId) && (
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <CurrencyDollarIcon className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-500">{order.gigId ? 'Gig' : 'Job'}</p>
+                      <Link
+                        to={order.gigId ? `/gigs/${order.gigId}/view` : `/jobs/${order.jobId}`}
+                        className="text-lg font-semibold text-primary hover:text-primary-dark"
+                      >
+                        {orderTitle}
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -268,6 +345,57 @@ const OrderDetails = () => {
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-gray-700 whitespace-pre-wrap">{order.notes}</p>
               </div>
+            </div>
+          )}
+
+          {/* Dispute section — available for both parties on non-cancelled orders */}
+          {order.status !== 'cancelled' && (
+            <div className="mt-8 border-t pt-6">
+              {hasDispute ? (
+                <div className="flex items-center gap-2 text-yellow-700 bg-yellow-50 rounded-lg px-4 py-3">
+                  <ExclamationTriangleIcon className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-sm font-medium">You have already opened a dispute for this order. <Link to="/disputes" className="underline">View disputes</Link></span>
+                </div>
+              ) : showDisputeForm ? (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Open a Dispute</h2>
+                  <DisputeForm
+                    orderId={order.id}
+                    otherPartyId={user.uid === order.buyerId ? order.sellerId : order.buyerId}
+                    projectTitle={order.gigTitle || order.jobTitle || `Order #${order.id.substring(0, 8)}`}
+                    onSuccess={() => { setShowDisputeForm(false); setHasDispute(true); }}
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowDisputeForm(true)}
+                  className="flex items-center gap-2 text-red-600 border border-red-300 rounded-lg px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
+                >
+                  <ExclamationTriangleIcon className="h-4 w-4" />
+                  Open a Dispute
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Review section — buyer reviews seller after completion */}
+          {order.status === 'completed' && user.uid === order.buyerId && (
+            <div className="mt-8 border-t pt-6">
+              {hasReview ? (
+                <p className="text-sm text-green-700 bg-green-50 rounded-lg px-4 py-3 font-medium">
+                  ✓ You have already submitted a review for this order.
+                </p>
+              ) : (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Leave a Review</h2>
+                  <ReviewForm
+                    freelancerId={order.sellerId}
+                    projectId={order.id}
+                    projectTitle={order.gigTitle || order.jobTitle || `Order #${order.id.substring(0, 8)}`}
+                    onSuccess={() => setHasReview(true)}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

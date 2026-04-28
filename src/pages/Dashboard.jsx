@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../config/firebase';
-import { collection, query, where, getDocs, or } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { 
   ChartBarIcon, 
   BriefcaseIcon, 
@@ -166,7 +166,7 @@ const Dashboard = () => {
       <div className="container-custom">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <Link to="/gigs/create" className="btn-primary flex items-center">
+          <Link to="/gigs" className="btn-primary flex items-center">
             <PlusIcon className="h-5 w-5 mr-2" />
             Create New Gig
           </Link>
@@ -296,7 +296,7 @@ const Dashboard = () => {
               <p className="mt-1 text-sm text-gray-500">Get started by creating your first gig.</p>
               <div className="mt-6">
                 <Link
-                  to="/gigs/create"
+                  to="/gigs"
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 >
                   <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />

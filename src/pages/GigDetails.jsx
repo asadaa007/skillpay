@@ -28,29 +28,30 @@ const GigDetails = () => {
   }, [gigId, user]);
 
   const fetchGig = async () => {
-    if (!user || !gigId) return;
-    
+    if (!gigId) return;
+
     try {
       const gigDoc = await getDoc(doc(db, 'gigs', gigId));
-      
+
       if (!gigDoc.exists()) {
         toast.error('Gig not found');
         navigate('/gigs');
         return;
       }
-      
-      const gigData = {
-        id: gigDoc.id,
-        ...gigDoc.data()
-      };
-      
-      // Verify the gig belongs to the current user
-      if (gigData.userId !== user.uid) {
-        toast.error('You do not have permission to view this gig');
-        navigate('/gigs');
+
+      const gigData = { id: gigDoc.id, ...gigDoc.data() };
+
+      if (user && gigData.userId !== user.uid) {
+        toast.error('You do not have permission to manage this gig');
+        navigate(`/gigs/${gigId}/view`);
         return;
       }
-      
+
+      if (!user) {
+        navigate(`/gigs/${gigId}/view`);
+        return;
+      }
+
       setGig(gigData);
     } catch (error) {
       console.error('Error fetching gig:', error);
@@ -177,7 +178,29 @@ const GigDetails = () => {
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {/* Pause / Activate toggle */}
+              {gig.status === 'active' ? (
+                <button
+                  onClick={() => handleStatusUpdate('paused')}
+                  disabled={updating}
+                  className="btn-secondary flex items-center"
+                  title="Pause gig — it will no longer appear in search"
+                >
+                  <ClockIcon className="h-5 w-5 mr-2" />
+                  Pause Gig
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleStatusUpdate('active')}
+                  disabled={updating}
+                  className="btn-primary flex items-center"
+                  title="Activate gig — it will appear in search results"
+                >
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  Activate Gig
+                </button>
+              )}
               <Link
                 to={`/gigs/${gig.id}/edit`}
                 className="btn-secondary flex items-center"

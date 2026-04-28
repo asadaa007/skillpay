@@ -149,17 +149,35 @@ const JobCard = ({ job, user, countries, onApply, onDelete, onEdit }) => {
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => onApply(job.id)}
-                  disabled={job.applications?.includes(user.uid)}
-                  className={`w-full px-4 py-2 rounded-md transition-colors ${
-                    job.applications?.includes(user.uid)
-                      ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                      : 'bg-primary text-white hover:bg-primary-dark'
-                  }`}
-                >
-                  {job.applications?.includes(user.uid) ? 'Applied' : 'Apply Now'}
-                </button>
+                job.status === 'hired' || job.status === 'in_progress' ? (
+                  job.hiredFreelancerId === user.uid ? (
+                    <button
+                      disabled
+                      className="w-full px-4 py-2 bg-blue-100 text-blue-800 rounded-md cursor-not-allowed font-semibold"
+                    >
+                      You're Hired!
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-md cursor-not-allowed"
+                    >
+                      Position Filled
+                    </button>
+                  )
+                ) : (
+                  <button
+                    onClick={() => onApply(job.id)}
+                    disabled={job.applications?.includes(user.uid)}
+                    className={`w-full px-4 py-2 rounded-md transition-colors ${
+                      job.applications?.includes(user.uid)
+                        ? 'bg-green-100 text-green-800 cursor-not-allowed'
+                        : 'bg-primary text-white hover:bg-primary-dark'
+                    }`}
+                  >
+                    {job.applications?.includes(user.uid) ? 'Applied' : 'Apply Now'}
+                  </button>
+                )
               )
             ) : (
               <Link 
