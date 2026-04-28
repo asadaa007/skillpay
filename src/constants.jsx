@@ -84,15 +84,6 @@ export const SEARCH_FILTERS = {
   }
 };
 
-// API endpoints
-export const API_ENDPOINTS = {
-  GIGS: '/api/gigs',
-  ORDERS: '/api/orders',
-  USERS: '/api/users',
-  PAYMENTS: '/api/payments',
-  UPLOADS: '/api/uploads'
-};
-
 // Error messages
 export const ERROR_MESSAGES = {
   REQUIRED_FIELD: 'This field is required',

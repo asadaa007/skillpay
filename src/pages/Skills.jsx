@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   StarIcon, 
@@ -16,6 +16,9 @@ const GIGS_PER_PAGE = 20;
 const Skills = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const urlCategory = searchParams.get('category') || 'all';
+
   const {
     gigs,
     loading,
@@ -25,18 +28,28 @@ const Skills = () => {
     handleFilterChange,
     handleLoadMore
   } = useGigData({
-    category: 'all',
+    category: urlCategory,
     skillLevel: 'all',
     sortBy: 'newest',
     showNew: false
   });
 
-  const handleStartChat = async (gigId) => {
+  // Sync category when URL param changes
+  React.useEffect(() => {
+    handleFilterChange('category', urlCategory);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlCategory]);
+
+  const handleStartChat = (sellerId) => {
     if (!user) {
       navigate('/login');
       return;
     }
-    // ... rest of chat handling code ...
+    if (sellerId === user.uid) {
+      toast('This is your own gig.', { icon: 'ℹ️' });
+      return;
+    }
+    navigate('/messages');
   };
 
   return (
@@ -218,7 +231,7 @@ const Skills = () => {
                     </span>
                   </div>
                   <button
-                    onClick={() => handleStartChat(gig.id)}
+                    onClick={() => handleStartChat(gig.userId)}
                     className="flex items-center text-primary hover:text-primary-dark"
                   >
                     <ChatBubbleLeftIcon className="h-5 w-5 mr-1" />

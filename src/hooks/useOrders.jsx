@@ -4,7 +4,8 @@ import {
   collection, 
   query, 
   where, 
-  getDocs, 
+  getDocs,
+  getDoc,
   addDoc, 
   updateDoc, 
   doc, 
@@ -52,32 +53,15 @@ export const useOrders = () => {
     try {
       setLoading(true);
       
-      // Create order document
       const orderDoc = await addDoc(collection(db, 'orders'), {
         ...orderData,
         status: 'pending',
+        paymentStatus: 'unpaid',
         createdAt: new Date(),
         updatedAt: new Date()
       });
       
-      // Create Stripe payment intent
-      const stripe = await stripePromise;
-      const { error: stripeError } = await stripe.redirectToCheckout({
-        lineItems: [
-          {
-            price: orderData.priceId,
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        successUrl: `${window.location.origin}/orders/${orderDoc.id}?success=true`,
-        cancelUrl: `${window.location.origin}/gigs/${orderData.gigId}?canceled=true`,
-      });
-      
-      if (stripeError) {
-        throw new Error(stripeError.message);
-      }
-      
+      toast.success('Order created successfully');
       return orderDoc.id;
     } catch (err) {
       console.error('Error creating order:', err);
@@ -111,7 +95,7 @@ export const useOrders = () => {
   const getOrderById = async (orderId) => {
     try {
       setLoading(true);
-      const orderDoc = await getDocs(doc(db, 'orders', orderId));
+      const orderDoc = await getDoc(doc(db, 'orders', orderId));
       if (!orderDoc.exists()) {
         throw new Error('Order not found');
       }

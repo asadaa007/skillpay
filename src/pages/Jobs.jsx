@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../config/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, increment, writeBatch, orderBy, limit, getDoc } from 'firebase/firestore';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import JobHeader from '../components/jobs/JobHeader';
 import JobFilters from '../components/jobs/JobFilters';
 import JobCard from '../components/jobs/JobCard';
@@ -10,8 +11,23 @@ import JobPostingForm from '../components/jobs/JobPostingForm';
 import ApplicationForm from '../components/jobs/ApplicationForm';
 import ApplicationsList from '../components/jobs/ApplicationsList';
 
+// Map URL slugs from Home.jsx to the label strings used by JobFilters
+const SLUG_TO_LABEL = {
+  'programming-tech': 'Programming & Tech',
+  'web-development': 'Web Development',
+  'mobile-development': 'Mobile Development',
+  'design-creative': 'Design & Creative',
+  'writing-translation': 'Writing & Translation',
+  'digital-marketing': 'Digital Marketing',
+  'video-animation': 'Video & Animation',
+  'music-audio': 'Music & Audio',
+  'business': 'Business',
+  'other': 'Other',
+};
+
 const Jobs = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showJobPostingModal, setShowJobPostingModal] = useState(false);
@@ -24,9 +40,18 @@ const Jobs = () => {
     jobApplicationCredits: 10
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    const slug = searchParams.get('category');
+    return slug ? (SLUG_TO_LABEL[slug] || slug) : '';
+  });
   const [selectedType, setSelectedType] = useState('');
   const [selectedExperience, setSelectedExperience] = useState('');
+
+  // Sync category when URL param changes
+  useEffect(() => {
+    const slug = searchParams.get('category');
+    if (slug) setSelectedCategory(SLUG_TO_LABEL[slug] || slug);
+  }, [searchParams]);
   const [jobFormData, setJobFormData] = useState({
     title: '',
     description: '',
@@ -268,7 +293,7 @@ const Jobs = () => {
       batch.set(jobRef, {
         ...jobFormData,
         clientId: user.uid,
-        clientName: user.displayName || userData?.name || 'Anonymous',
+        clientName: userData?.fullName || user.displayName || 'Anonymous',
         status: 'open',
         createdAt: serverTimestamp(),
         applications: []

@@ -26,8 +26,8 @@ const Messages = () => {
 
     const fetchConversations = async () => {
       try {
-        // Query conversations collection where user is a participant
-        const conversationsRef = collection(db, 'conversations');
+        // Query chats collection (same collection used by ChatWindow)
+        const conversationsRef = collection(db, 'chats');
         const conversationsQuery = query(
           conversationsRef,
           where('participants', 'array-contains', user.uid)

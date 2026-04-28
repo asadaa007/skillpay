@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import ReviewCard from './ReviewCard';
 import { FiStar } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
 const ReviewsManager = ({ userId }) => {
   const [reviews, setReviews] = useState([]);
@@ -78,7 +79,14 @@ const ReviewsManager = ({ userId }) => {
             />
           ))
         ) : (
-          <p className="text-center text-gray-500 py-8">No reviews yet</p>
+          <div className="text-center py-8 bg-white rounded-lg shadow p-6">
+            <FiStar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 mb-2">No reviews yet</p>
+            <p className="text-sm text-gray-400">
+              Complete orders to receive reviews from buyers.{' '}
+              <Link to="/orders" className="text-primary hover:underline font-medium">View your orders</Link>
+            </p>
+          </div>
         )}
       </div>
     </div>

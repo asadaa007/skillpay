@@ -39,7 +39,11 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (
         resource.data.clientId == request.auth.uid ||  // Job owner can update
         request.resource.data.applications != null &&  // Allow updating applications array
-        request.resource.data.applications.size() > resource.data.applications.size()  // Only allow adding to applications
+        request.resource.data.applications.size() > resource.data.applications.size() ||  // Only allow adding to applications
+        (resource.data.clientId == request.auth.uid &&  // Allow job owner to update status
+         request.resource.data.status == 'hired' &&
+         request.resource.data.hiredFreelancerId != null &&
+         request.resource.data.orderId != null)
       );
       allow delete: if isAuthenticated() && resource.data.clientId == request.auth.uid;
     }
@@ -73,7 +77,10 @@ service cloud.firestore {
         resource.data.sellerId == request.auth.uid ||
         isAdmin()
       );
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        request.resource.data.buyerId == request.auth.uid ||  // Allow job owner to create order
+        request.resource.data.sellerId == request.auth.uid    // Allow freelancer to create order
+      );
       allow update: if isAuthenticated() && (
         resource.data.buyerId == request.auth.uid ||
         resource.data.sellerId == request.auth.uid ||
@@ -84,7 +91,7 @@ service cloud.firestore {
     // Notifications collection rules
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated() && request.auth.uid != request.resource.data.userId;
+      allow create: if isAuthenticated();
       allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
       allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
@@ -167,6 +174,60 @@ service cloud.firestore {
       }
     }
     
+    // Reviews collection rules
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.reviewerId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.reviewerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.reviewerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Payments collection rules
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Projects collection rules
+    match /projects/{projectId} {
+      allow read: if isAuthenticated() && (
+        resource.data.clientId == request.auth.uid ||
+        resource.data.freelancerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.clientId == request.auth.uid ||
+        request.resource.data.freelancerId == request.auth.uid
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.clientId == request.auth.uid ||
+        resource.data.freelancerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && resource.data.clientId == request.auth.uid;
+
+      // Milestones subcollection
+      match /milestones/{milestoneId} {
+        allow read, write: if isAuthenticated() && (
+          get(/databases/$(database)/documents/projects/$(projectId)).data.clientId == request.auth.uid ||
+          get(/databases/$(database)/documents/projects/$(projectId)).data.freelancerId == request.auth.uid
+        );
+      }
+    }
+
     // Default deny all
     match /{document=**} {
       allow read, write: if false;

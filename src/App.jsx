@@ -37,6 +37,13 @@ import MyTeams from './components/Profile/MyTeams';
 import PasswordSecurity from './components/Profile/PasswordSecurity';
 import NotificationSettings from './components/Profile/NotificationSettings';
 import GigView from './pages/GigView';
+import PublicPortfolio from './pages/PublicPortfolio';
+import CleanupOrders from './pages/CleanupOrders';
+import Search from './pages/Search';
+import Disputes from './pages/Disputes';
+import ApplyJob from './pages/ApplyJob';
+import ReviewModeration from './pages/admin/ReviewModeration';
+import DisputeModeration from './pages/admin/DisputeModeration';
 import './App.css';
 
 // Protected Route component
@@ -58,6 +65,25 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Admin-only Route component
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/" />;
+  }
+
+  return children;
+};
+
 const App = () => {
   return (
     <AuthProvider>
@@ -74,6 +100,14 @@ const App = () => {
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:jobId" element={<JobDetails />} />
               <Route path="/jobs/:jobId/edit" element={<EditJob />} />
+              <Route
+                path="/jobs/:jobId/apply"
+                element={
+                  <ProtectedRoute>
+                    <ApplyJob />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/web-development" element={<WebDevelopment />} />
               <Route path="/mobile-development" element={<MobileDevelopment />} />
               <Route path="/ui-design" element={<UIDesign />} />
@@ -126,6 +160,7 @@ const App = () => {
                   </ProtectedRoute>
                 } 
               />
+              <Route path="/portfolio/:userId" element={<PublicPortfolio />} />
               <Route 
                 path="/messages" 
                 element={
@@ -172,6 +207,39 @@ const App = () => {
                   <ProtectedRoute>
                     <OrderDetails />
                   </ProtectedRoute>
+                } 
+              />
+              <Route path="/search" element={<Search />} />
+              <Route 
+                path="/disputes" 
+                element={
+                  <ProtectedRoute>
+                    <Disputes />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/reviews" 
+                element={
+                  <AdminRoute>
+                    <ReviewModeration />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/disputes" 
+                element={
+                  <AdminRoute>
+                    <DisputeModeration />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/cleanup-orders" 
+                element={
+                  <AdminRoute>
+                    <CleanupOrders />
+                  </AdminRoute>
                 } 
               />
             </Routes>

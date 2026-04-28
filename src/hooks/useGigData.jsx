@@ -33,26 +33,19 @@ export const useGigData = (initialFilters = {}) => {
   const buildQuery = useCallback(() => {
     let queryConditions = [];
 
-    // Base query - always order by createdAt for consistency
-    queryConditions.push(orderBy('createdAt', 'desc'));
-
-    // Apply category filter
-    if (filters.category !== 'all') {
+    // Apply equality filters first (required before orderBy in Firestore)
+    if (filters.category && filters.category !== 'all') {
       queryConditions.push(where('category', '==', filters.category));
     }
 
-    // Apply skill level filter
-    if (filters.skillLevel !== 'all') {
+    if (filters.skillLevel && filters.skillLevel !== 'all') {
       queryConditions.push(where('sellerLevel', '==', filters.skillLevel));
     }
 
-    // Apply sorting
+    // Apply single orderBy based on sortBy to avoid needing composite indexes
     switch (filters.sortBy) {
       case 'rating':
         queryConditions.push(orderBy('rating', 'desc'));
-        break;
-      case 'reviews':
-        queryConditions.push(orderBy('reviews', 'desc'));
         break;
       case 'price_asc':
         queryConditions.push(orderBy('price', 'asc'));
@@ -60,7 +53,9 @@ export const useGigData = (initialFilters = {}) => {
       case 'price_desc':
         queryConditions.push(orderBy('price', 'desc'));
         break;
-      // 'newest' is handled by default createdAt ordering
+      case 'newest':
+      default:
+        queryConditions.push(orderBy('createdAt', 'desc'));
     }
 
     // Apply pagination
@@ -105,6 +100,8 @@ export const useGigData = (initialFilters = {}) => {
       
       const newGigs = querySnapshot.docs.map(doc => {
         const data = doc.data();
+        const createdAt = data.createdAt?.toDate() || new Date();
+        const isNew = (new Date() - createdAt) < (7 * 24 * 60 * 60 * 1000);
         return {
           id: doc.id,
           title: data.title || 'Untitled Gig',
@@ -117,16 +114,13 @@ export const useGigData = (initialFilters = {}) => {
           reviews: parseInt(data.reviews) || 0,
           sellerLevel: data.sellerLevel || 'Level 1',
           userId: data.userId,
-          image: data.images && data.images.length > 0 ? 
-            data.images[0] : 
-            'https://via.placeholder.com/500x300?text=No+Image',
+          ownerName: data.ownerName || data.userName || '',
+          image: data.images?.[0] || null,
           images: Array.isArray(data.images) ? data.images : [],
-          createdAt: data.createdAt?.toDate() || new Date(),
-          isNew: data.createdAt ? 
-            (new Date() - data.createdAt.toDate()) < (7 * 24 * 60 * 60 * 1000) : 
-            false
+          createdAt,
+          isNew,
         };
-      });
+      }).filter(gig => !filters.showNew || gig.isNew);
 
       // Update cache
       const hasMore = querySnapshot.docs.length >= GIGS_PER_PAGE;

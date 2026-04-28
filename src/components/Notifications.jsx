@@ -66,9 +66,23 @@ const Notifications = () => {
     switch (notification.type) {
       case 'new_application':
       case 'application_accepted':
-        return `/jobs/${notification.jobId}`;
+        return notification.jobId ? `/jobs/${notification.jobId}` : '/jobs';
+      case 'new_order':
+      case 'order_started':
+      case 'order_updated':
+        return notification.orderId ? `/orders/${notification.orderId}` : '/orders';
+      case 'new_chat':
+      case 'new_message':
+      case 'message':
+        return notification.chatId
+          ? `/messages?conversation=${notification.chatId}`
+          : '/messages';
+      case 'dispute':
+        return notification.disputeId ? `/disputes` : '/disputes';
+      case 'review':
+        return '/profile';
       default:
-        return '#';
+        return '/dashboard';
     }
   };
 
@@ -95,6 +109,28 @@ const Notifications = () => {
                 {notification.createdAt?.toLocaleString()}
               </p>
             </div>
+          </div>
+        );
+      case 'order_started':
+        return (
+          <div>
+            <p className="text-sm font-medium text-green-700">{notification.title}</p>
+            <p className="text-sm text-gray-600">{notification.message}</p>
+            <p className="text-xs text-gray-500 mt-1">{notification.createdAt?.toLocaleString()}</p>
+          </div>
+        );
+      case 'order_updated':
+        return (
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              {notification.title}
+            </p>
+            <p className="text-sm text-gray-600">
+              {notification.message}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {notification.createdAt?.toLocaleString()}
+            </p>
           </div>
         );
       default:

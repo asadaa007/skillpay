@@ -32,14 +32,14 @@ const TransactionHistory = () => {
       const querySnapshot = await getDocs(q);
       const transactionsData = [];
 
-      for (const doc of querySnapshot.docs) {
-        const data = doc.data();
+      for (const txDoc of querySnapshot.docs) {
+        const data = txDoc.data();
         const gigRef = doc(db, 'gigs', data.gigId);
         const gigDoc = await getDoc(gigRef);
         const gigData = gigDoc.data();
 
         transactionsData.push({
-          id: doc.id,
+          id: txDoc.id,
           ...data,
           gig: {
             title: gigData?.title || 'Deleted Gig',

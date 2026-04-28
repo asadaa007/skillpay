@@ -19,6 +19,7 @@ const Profile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
     fullName: '',
     title: '',
@@ -134,7 +135,7 @@ const Profile = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!user) return;
 
     setSaving(true);
@@ -144,6 +145,7 @@ const Profile = () => {
         ...profileData,
         updatedAt: new Date()
       });
+      setIsEditing(false);
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -173,6 +175,7 @@ const Profile = () => {
                 src={profileData.avatar || '/default-avatar.png'}
                 alt="Profile"
                 className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
+                onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
               />
               {/* Online Indicator */}
               <span className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></span>
@@ -197,22 +200,45 @@ const Profile = () => {
           </div>
           {/* Right: Buttons and Share */}
           <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 ml-auto mt-4 md:mt-0">
-            <button
-              className="border border-green-600 text-green-600 px-6 py-2 rounded-lg font-semibold hover:bg-green-50 transition text-base"
-            >
-              See public view
-            </button>
-            <Link
-              to="/profile/settings"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            >
-              <FiSettings className="mr-2" />
-              Profile Settings
-            </Link>
-            <div className="flex items-center gap-1 text-green-700 cursor-pointer hover:text-green-800 ml-2 text-sm mt-2 md:mt-0">
-              <span>Share</span>
-              <FiShare2 className="w-5 h-5" />
-            </div>
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleSubmit}
+                  disabled={saving}
+                  className="px-6 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark disabled:opacity-50 transition text-base"
+                >
+                  {saving ? 'Saving...' : 'Save Profile'}
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="border border-gray-400 text-gray-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-50 transition text-base"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="border border-primary text-primary px-6 py-2 rounded-lg font-semibold hover:bg-primary/5 transition text-base"
+                >
+                  Edit Profile
+                </button>
+                <Link
+                  to={`/profile/${user?.uid}`}
+                  className="border border-green-600 text-green-600 px-6 py-2 rounded-lg font-semibold hover:bg-green-50 transition text-base"
+                >
+                  Public View
+                </Link>
+                <Link
+                  to="/profile/settings"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                >
+                  <FiSettings className="mr-2" />
+                  Settings
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -257,25 +283,28 @@ const Profile = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
-                <button 
-                  className="text-primary hover:text-primary-dark"
-                >
-                  <FiEdit2 className="h-4 w-4" />
-                </button>
+                {!isEditing && <button onClick={() => setIsEditing(true)} className="text-primary hover:text-primary-dark"><FiEdit2 className="h-4 w-4" /></button>}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {profileData.skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-light text-primary"
-                  >
-                    {skill}
-                  </span>
-                ))}
-                {profileData.skills.length === 0 && (
-                  <p className="text-gray-500 text-sm">Add your skills to stand out</p>
-                )}
-              </div>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={profileData.skills.join(', ')}
+                  onChange={(e) => handleArrayInputChange(e, 'skills')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-gray-700"
+                  placeholder="Comma-separated skills e.g. React, Node.js, Python"
+                />
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {profileData.skills.map((skill, index) => (
+                    <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-light text-primary">
+                      {skill}
+                    </span>
+                  ))}
+                  {profileData.skills.length === 0 && (
+                    <p className="text-gray-500 text-sm">Add your skills to stand out</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Languages Card */}
@@ -308,45 +337,56 @@ const Profile = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Links</h2>
-                <button 
-                  className="text-primary hover:text-primary-dark"
-                >
-                  <FiEdit2 className="h-4 w-4" />
-                </button>
+                {!isEditing && <button onClick={() => setIsEditing(true)} className="text-primary hover:text-primary-dark"><FiEdit2 className="h-4 w-4" /></button>}
               </div>
-              <div className="space-y-3">
-                {profileData.website && (
-                  <a href={profileData.website} target="_blank" rel="noopener noreferrer" 
-                     className="flex items-center text-gray-600 hover:text-primary">
-                    <FiGlobe className="h-4 w-4 mr-2" />
-                    <span>Website</span>
-                  </a>
-                )}
-                {profileData.github && (
-                  <a href={profileData.github} target="_blank" rel="noopener noreferrer"
-                     className="flex items-center text-gray-600 hover:text-primary">
-                    <FiGithub className="h-4 w-4 mr-2" />
-                    <span>GitHub</span>
-                  </a>
-                )}
-                {profileData.linkedin && (
-                  <a href={profileData.linkedin} target="_blank" rel="noopener noreferrer"
-                     className="flex items-center text-gray-600 hover:text-primary">
-                    <FiLinkedin className="h-4 w-4 mr-2" />
-                    <span>LinkedIn</span>
-                  </a>
-                )}
-                {profileData.twitter && (
-                  <a href={profileData.twitter} target="_blank" rel="noopener noreferrer"
-                     className="flex items-center text-gray-600 hover:text-primary">
-                    <FiTwitter className="h-4 w-4 mr-2" />
-                    <span>Twitter</span>
-                  </a>
-                )}
-                {!profileData.website && !profileData.github && !profileData.linkedin && !profileData.twitter && (
-                  <p className="text-gray-500 text-sm">Add your social and professional links</p>
-                )}
-              </div>
+              {isEditing ? (
+                <div className="space-y-3">
+                  {[
+                    { name: 'website', icon: <FiGlobe />, placeholder: 'Website URL' },
+                    { name: 'github', icon: <FiGithub />, placeholder: 'GitHub URL' },
+                    { name: 'linkedin', icon: <FiLinkedin />, placeholder: 'LinkedIn URL' },
+                    { name: 'twitter', icon: <FiTwitter />, placeholder: 'Twitter URL' },
+                  ].map(({ name, icon, placeholder }) => (
+                    <div key={name} className="flex items-center gap-2">
+                      <span className="text-gray-400">{icon}</span>
+                      <input
+                        type="url"
+                        name={name}
+                        value={profileData[name]}
+                        onChange={handleInputChange}
+                        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+                        placeholder={placeholder}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {profileData.website && (
+                    <a href={profileData.website} target="_blank" rel="noopener noreferrer" className="flex items-center text-gray-600 hover:text-primary">
+                      <FiGlobe className="h-4 w-4 mr-2" /><span>Website</span>
+                    </a>
+                  )}
+                  {profileData.github && (
+                    <a href={profileData.github} target="_blank" rel="noopener noreferrer" className="flex items-center text-gray-600 hover:text-primary">
+                      <FiGithub className="h-4 w-4 mr-2" /><span>GitHub</span>
+                    </a>
+                  )}
+                  {profileData.linkedin && (
+                    <a href={profileData.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center text-gray-600 hover:text-primary">
+                      <FiLinkedin className="h-4 w-4 mr-2" /><span>LinkedIn</span>
+                    </a>
+                  )}
+                  {profileData.twitter && (
+                    <a href={profileData.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center text-gray-600 hover:text-primary">
+                      <FiTwitter className="h-4 w-4 mr-2" /><span>Twitter</span>
+                    </a>
+                  )}
+                  {!profileData.website && !profileData.github && !profileData.linkedin && !profileData.twitter && (
+                    <p className="text-gray-500 text-sm">Add your social and professional links</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -356,68 +396,89 @@ const Profile = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">About</h2>
-                <button 
-                  className="text-primary hover:text-primary-dark"
-                >
-                  <FiEdit2 className="h-4 w-4" />
-                </button>
+                {!isEditing && <button onClick={() => setIsEditing(true)} className="text-primary hover:text-primary-dark"><FiEdit2 className="h-4 w-4" /></button>}
               </div>
-              <p className="text-gray-600 whitespace-pre-wrap">
-                {profileData.bio || 'Add a bio to tell others about yourself'}
-              </p>
+              {isEditing ? (
+                <textarea
+                  name="bio"
+                  value={profileData.bio}
+                  onChange={handleInputChange}
+                  rows={5}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-gray-700"
+                  placeholder="Tell others about yourself..."
+                />
+              ) : (
+                <p className="text-gray-600 whitespace-pre-wrap">{profileData.bio || 'Add a bio to tell others about yourself'}</p>
+              )}
             </div>
 
             {/* Experience Section */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Experience</h2>
-                <button 
-                  className="text-primary hover:text-primary-dark"
-                >
-                  <FiEdit2 className="h-4 w-4" />
-                </button>
+                {!isEditing && <button onClick={() => setIsEditing(true)} className="text-primary hover:text-primary-dark"><FiEdit2 className="h-4 w-4" /></button>}
               </div>
-              <div className="text-gray-600 whitespace-pre-wrap">
-                {profileData.experience || 'Add your work experience'}
-              </div>
+              {isEditing ? (
+                <textarea
+                  name="experience"
+                  value={profileData.experience}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-gray-700"
+                  placeholder="Describe your work experience..."
+                />
+              ) : (
+                <div className="text-gray-600 whitespace-pre-wrap">{profileData.experience || 'Add your work experience'}</div>
+              )}
             </div>
 
             {/* Education Section */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Education</h2>
-                <button 
-                  className="text-primary hover:text-primary-dark"
-                >
-                  <FiEdit2 className="h-4 w-4" />
-                </button>
+                {!isEditing && <button onClick={() => setIsEditing(true)} className="text-primary hover:text-primary-dark"><FiEdit2 className="h-4 w-4" /></button>}
               </div>
-              <div className="text-gray-600 whitespace-pre-wrap">
-                {profileData.education || 'Add your educational background'}
-              </div>
+              {isEditing ? (
+                <textarea
+                  name="education"
+                  value={profileData.education}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-gray-700"
+                  placeholder="Your educational background..."
+                />
+              ) : (
+                <div className="text-gray-600 whitespace-pre-wrap">{profileData.education || 'Add your educational background'}</div>
+              )}
             </div>
 
             {/* Certifications Section */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Certifications</h2>
-                <button 
-                  className="text-primary hover:text-primary-dark"
-                >
-                  <FiEdit2 className="h-4 w-4" />
-                </button>
+                {!isEditing && <button onClick={() => setIsEditing(true)} className="text-primary hover:text-primary-dark"><FiEdit2 className="h-4 w-4" /></button>}
               </div>
-              <div className="space-y-2">
-                {profileData.certifications.map((cert, index) => (
-                  <div key={index} className="flex items-center text-gray-600">
-                    <FiAward className="h-4 w-4 mr-2 text-primary" />
-                    <span>{cert}</span>
-                  </div>
-                ))}
-                {profileData.certifications.length === 0 && (
-                  <p className="text-gray-500 text-sm">Add your certifications and achievements</p>
-                )}
-              </div>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={profileData.certifications.join(', ')}
+                  onChange={(e) => handleArrayInputChange(e, 'certifications')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-gray-700"
+                  placeholder="Comma-separated certifications e.g. AWS, PMP, Google Analytics"
+                />
+              ) : (
+                <div className="space-y-2">
+                  {profileData.certifications.map((cert, index) => (
+                    <div key={index} className="flex items-center text-gray-600">
+                      <FiAward className="h-4 w-4 mr-2 text-primary" />
+                      <span>{cert}</span>
+                    </div>
+                  ))}
+                  {profileData.certifications.length === 0 && (
+                    <p className="text-gray-500 text-sm">Add your certifications and achievements</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -28,7 +28,6 @@ const CategoryPage = ({ category, title, description }) => {
   }, [category]);
 
   useEffect(() => {
-    // Apply filters locally
     let filtered = [...gigs];
 
     if (filters.search) {
@@ -48,8 +47,8 @@ const CategoryPage = ({ category, title, description }) => {
     }
 
     if (filters.rating !== 'all') {
-      const rating = parseInt(filters.rating);
-      filtered = filtered.filter(gig => gig.rating >= rating);
+      const rating = parseFloat(filters.rating);
+      filtered = filtered.filter(gig => (gig.rating || 0) >= rating);
     }
 
     setFilteredGigs(filtered);
@@ -58,79 +57,21 @@ const CategoryPage = ({ category, title, description }) => {
   const fetchGigs = async () => {
     setLoading(true);
     try {
-      // In a real app, we would query Firestore for gigs in this category
-      // For now, we'll use dummy data
-      const dummyGigs = generateDummyGigs(category);
-      setGigs(dummyGigs);
-      setFilteredGigs(dummyGigs);
+      const gigsRef = collection(db, 'gigs');
+      const q = query(gigsRef, where('category', '==', category), where('status', '==', 'active'));
+      const snapshot = await getDocs(q);
+      const gigsData = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      setGigs(gigsData);
+      setFilteredGigs(gigsData);
     } catch (error) {
       console.error('Error fetching gigs:', error);
       toast.error('Failed to fetch gigs');
     } finally {
       setLoading(false);
     }
-  };
-
-  // Generate dummy gigs based on category
-  const generateDummyGigs = (category) => {
-    const categories = {
-      'web-development': [
-        { title: 'Custom WordPress Website Development', price: 500, rating: 4.8, image: 'https://via.placeholder.com/300x200?text=WordPress' },
-        { title: 'React.js Frontend Development', price: 800, rating: 4.9, image: 'https://via.placeholder.com/300x200?text=React' },
-        { title: 'Full Stack MERN Development', price: 1200, rating: 4.7, image: 'https://via.placeholder.com/300x200?text=MERN' },
-        { title: 'E-commerce Website with Shopify', price: 600, rating: 4.6, image: 'https://via.placeholder.com/300x200?text=Shopify' },
-        { title: 'PHP Laravel Backend API', price: 700, rating: 4.5, image: 'https://via.placeholder.com/300x200?text=Laravel' }
-      ],
-      'mobile-development': [
-        { title: 'iOS App Development with Swift', price: 1500, rating: 4.9, image: 'https://via.placeholder.com/300x200?text=iOS' },
-        { title: 'Android App with Kotlin', price: 1300, rating: 4.8, image: 'https://via.placeholder.com/300x200?text=Android' },
-        { title: 'React Native Cross-Platform App', price: 1000, rating: 4.7, image: 'https://via.placeholder.com/300x200?text=ReactNative' },
-        { title: 'Flutter Mobile App Development', price: 1100, rating: 4.6, image: 'https://via.placeholder.com/300x200?text=Flutter' },
-        { title: 'Mobile App UI/UX Design', price: 600, rating: 4.5, image: 'https://via.placeholder.com/300x200?text=MobileUI' }
-      ],
-      'ui-design': [
-        { title: 'Professional Logo Design', price: 100, rating: 4.9, image: 'https://via.placeholder.com/300x200?text=Logo' },
-        { title: 'Brand Identity Package', price: 300, rating: 4.8, image: 'https://via.placeholder.com/300x200?text=Brand' },
-        { title: 'UI/UX Design for Web App', price: 500, rating: 4.7, image: 'https://via.placeholder.com/300x200?text=UIUX' },
-        { title: 'Social Media Graphics Package', price: 150, rating: 4.6, image: 'https://via.placeholder.com/300x200?text=Social' },
-        { title: 'Product Packaging Design', price: 200, rating: 4.5, image: 'https://via.placeholder.com/300x200?text=Packaging' }
-      ],
-      'writing': [
-        { title: 'SEO-Optimized Blog Writing', price: 50, rating: 4.9, image: 'https://via.placeholder.com/300x200?text=Blog' },
-        { title: 'Technical Documentation', price: 200, rating: 4.8, image: 'https://via.placeholder.com/300x200?text=TechDoc' },
-        { title: 'Copywriting for Landing Pages', price: 150, rating: 4.7, image: 'https://via.placeholder.com/300x200?text=Copy' },
-        { title: 'E-book Writing and Formatting', price: 500, rating: 4.6, image: 'https://via.placeholder.com/300x200?text=Ebook' },
-        { title: 'Content Strategy and Planning', price: 300, rating: 4.5, image: 'https://via.placeholder.com/300x200?text=Content' }
-      ],
-      'marketing': [
-        { title: 'Social Media Marketing Campaign', price: 400, rating: 4.9, image: 'https://via.placeholder.com/300x200?text=Social' },
-        { title: 'Email Marketing Setup and Strategy', price: 250, rating: 4.8, image: 'https://via.placeholder.com/300x200?text=Email' },
-        { title: 'SEO Audit and Optimization', price: 300, rating: 4.7, image: 'https://via.placeholder.com/300x200?text=SEO' },
-        { title: 'Google Ads Campaign Management', price: 350, rating: 4.6, image: 'https://via.placeholder.com/300x200?text=Ads' },
-        { title: 'Content Marketing Strategy', price: 450, rating: 4.5, image: 'https://via.placeholder.com/300x200?text=Content' }
-      ],
-      'other': [
-        { title: 'Virtual Assistant Services', price: 200, rating: 4.9, image: 'https://via.placeholder.com/300x200?text=VA' },
-        { title: 'Data Entry and Organization', price: 150, rating: 4.8, image: 'https://via.placeholder.com/300x200?text=Data' },
-        { title: 'Translation Services', price: 100, rating: 4.7, image: 'https://via.placeholder.com/300x200?text=Translation' },
-        { title: 'Video Editing and Production', price: 300, rating: 4.6, image: 'https://via.placeholder.com/300x200?text=Video' },
-        { title: 'Business Consulting', price: 500, rating: 4.5, image: 'https://via.placeholder.com/300x200?text=Consulting' }
-      ]
-    };
-
-    // Add IDs and other properties to make the data more realistic
-    return (categories[category] || []).map((gig, index) => ({
-      id: `dummy-${category}-${index}`,
-      ...gig,
-      userId: `user-${index}`,
-      userName: `Freelancer ${index + 1}`,
-      userPhoto: `https://i.pravatar.cc/150?img=${index + 10}`,
-      description: `This is a sample ${gig.title.toLowerCase()} gig. In a real application, this would contain detailed information about the service offered.`,
-      category,
-      createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
-      deliveryTime: Math.floor(Math.random() * 14) + 1,
-      reviews: Math.floor(Math.random() * 100) + 10
-    }));
   };
 
   const formatDate = (timestamp) => {
@@ -232,44 +173,45 @@ const CategoryPage = ({ category, title, description }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredGigs.map((gig) => (
               <div key={gig.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-                <div className="h-48 overflow-hidden">
-                  <img 
-                    src={gig.image} 
-                    alt={gig.title} 
-                    className="w-full h-full object-cover"
-                  />
+                <div className="h-48 overflow-hidden bg-gray-100 flex items-center justify-center">
+                  {gig.images?.[0] ? (
+                    <img
+                      src={gig.images[0]}
+                      alt={gig.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <BriefcaseIcon className="h-16 w-16 text-gray-300" />
+                  )}
                 </div>
                 <div className="p-6">
                   <div className="flex items-center mb-2">
-                    <img 
-                      src={gig.userPhoto} 
-                      alt={gig.userName} 
-                      className="w-8 h-8 rounded-full mr-2"
-                    />
-                    <span className="text-sm text-gray-600">{gig.userName}</span>
+                    <UserIcon className="w-7 h-7 text-gray-400 mr-2 rounded-full border p-0.5" />
+                    <span className="text-sm text-gray-600">{gig.ownerName || gig.userName || 'Freelancer'}</span>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">{gig.title}</h3>
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">{gig.description}</p>
-                  
+
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                       <StarIcon className="h-5 w-5 text-yellow-400 mr-1" />
-                      <span className="text-sm font-medium">{gig.rating}</span>
-                      <span className="text-sm text-gray-500 ml-1">({gig.reviews} reviews)</span>
+                      <span className="text-sm font-medium">{gig.rating ? Number(gig.rating).toFixed(1) : '—'}</span>
                     </div>
-                    <div className="flex items-center">
-                      <ClockIcon className="h-5 w-5 text-gray-500 mr-1" />
-                      <span className="text-sm text-gray-600">{gig.deliveryTime} days delivery</span>
-                    </div>
+                    {gig.deliveryTime && (
+                      <div className="flex items-center">
+                        <ClockIcon className="h-5 w-5 text-gray-500 mr-1" />
+                        <span className="text-sm text-gray-600">{gig.deliveryTime} day{gig.deliveryTime !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
                   </div>
-                  
+
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div className="flex items-center">
                       <CurrencyDollarIcon className="h-5 w-5 text-gray-500 mr-1" />
                       <span className="text-lg font-bold text-gray-900">${gig.price}</span>
                     </div>
-                    <Link 
-                      to={`/gigs/${gig.id}`}
+                    <Link
+                      to={`/gigs/${gig.id}/view`}
                       className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
                     >
                       View Details
